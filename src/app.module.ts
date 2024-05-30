@@ -19,7 +19,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { validate } from './misc/env.validation';
-import { PipelineService } from './modules/pipeline/pipeline.service';
+import { CompileModule } from './modules/compile/compile.module';
+import { PipelineModule } from './modules/pipeline/pipeline.module';
+import { JailModule } from './modules/jail/jail.module';
+import { SqlModule } from './modules/sql/sql.module';
+import { BotzoneModule } from './modules/botzone/botzone.module';
+import { JudgeModule } from './modules/judge/judge.module';
 
 const env_file_path = process.env.NODE_ENV === 'production' ? 
   ['.env.production', '.env'] :
@@ -32,8 +37,14 @@ const env_file_path = process.env.NODE_ENV === 'production' ?
       isGlobal: true,
       validate, // schema see /src/misc/env.validation.ts
     }),
+    CompileModule,
+    PipelineModule,
+    JailModule,
+    SqlModule,
+    BotzoneModule,
+    JudgeModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PipelineService],
+  providers: [AppService],
 })
 export class AppModule {}
