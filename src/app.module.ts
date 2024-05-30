@@ -19,6 +19,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { validate } from './misc/env.validation';
+import { PipelineService } from './modules/pipeline/pipeline.service';
 
 const env_file_path = process.env.NODE_ENV === 'production' ? 
   ['.env.production', '.env'] :
@@ -33,6 +34,6 @@ const env_file_path = process.env.NODE_ENV === 'production' ?
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PipelineService],
 })
 export class AppModule {}
