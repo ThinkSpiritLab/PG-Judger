@@ -21,22 +21,25 @@ export class NsJail extends EventEmitter {
   signs: string[] = []
   signs_short: string[] = []
   nsjailProcess: ChildProcessWithoutNullStreams
-  cmd_pipe_file: string
-  targetPid: number
-  onPidReceived: (pid: number) => void
+  // cmd_pipe_file: string
+  // targetPid: number
+  // onPidReceived: (pid: number) => void
   onNsjailExit: (code: number, signal: string) => void
   stdOut: string = ''
   stdErr: string = ''
 
-  getMonitor() {
-    if (!this.nsjailProcess) {
-      throw new Error('You must spawn the process first')
-    }
-    if (!this.targetPid) {
-      throw new Error('You must enable cmd_pipe first so that nsjail can send the pid to the nsjailRush')
-    }
-    return new NsjailMonitor(this.nsjailProcess, this.targetPid)
-  }
+  // /**
+  //  * @deprecated
+  //  */
+  // getMonitor() {
+  //   if (!this.nsjailProcess) {
+  //     throw new Error('You must spawn the process first')
+  //   }
+  //   if (!this.targetPid) {
+  //     throw new Error('You must enable cmd_pipe first so that nsjail can send the pid to the nsjailRush')
+  //   }
+  //   return new NsjailMonitor(this.nsjailProcess, this.targetPid)
+  // }
 
   private constructor(path: string, args: string[] = []) {
     super()
@@ -76,45 +79,45 @@ export class NsJail extends EventEmitter {
       throw new Error(`The path to command is not valid or unset:${this.path_to_command}`)
     }
 
-    if (this.cmd_pipe_file) {
-      const fifoPath = path.resolve(this.cmd_pipe_file)
-      // if exists
-      if (fs.existsSync(fifoPath)) {
-        throw new Error('The fifo file already exists, this may due to the previous process not closed correctly')
-      }
-      mkfifo.mkfifoSync(fifoPath, 0o700)
+    // if (this.cmd_pipe_file) {
+    //   const fifoPath = path.resolve(this.cmd_pipe_file)
+    //   // if exists
+    //   if (fs.existsSync(fifoPath)) {
+    //     throw new Error('The fifo file already exists, this may due to the previous process not closed correctly')
+    //   }
+    //   mkfifo.mkfifoSync(fifoPath, 0o700)
 
-      const readStream = fs.createReadStream(fifoPath) // { encoding: 'utf8' }
-      readStream.on('data', (data) => {
-        // console.log(`received: ${data}`);
-        if (data.toString().startsWith('pid:')) {
-          const pid = parseInt(data.toString().split(':')[1])
-          console.log('pid:', pid)
-          this.targetPid = pid
-          if (this.onPidReceived) {
-            this.onPidReceived(pid)
-          }
-        }
-      });
+    //   const readStream = fs.createReadStream(fifoPath) // { encoding: 'utf8' }
+    //   readStream.on('data', (data) => {
+    //     // console.log(`received: ${data}`);
+    //     if (data.toString().startsWith('pid:')) {
+    //       const pid = parseInt(data.toString().split(':')[1])
+    //       console.log('pid:', pid)
+    //       this.targetPid = pid
+    //       if (this.onPidReceived) {
+    //         this.onPidReceived(pid)
+    //       }
+    //     }
+    //   });
 
-      readStream.on('error', (err) => {
-        console.error(err);
-      });
+    //   readStream.on('error', (err) => {
+    //     console.error(err);
+    //   });
 
 
-      let closePipe = () => {
-        readStream.close()
-        // remove fifo
-        if (fs.existsSync(fifoPath)) {
-          fs.unlinkSync(fifoPath)
-          // console.log('pipe closed')
-        }
-      }
+    //   let closePipe = () => {
+    //     readStream.close()
+    //     // remove fifo
+    //     if (fs.existsSync(fifoPath)) {
+    //       fs.unlinkSync(fifoPath)
+    //       // console.log('pipe closed')
+    //     }
+    //   }
 
-      readStream.on('end', () => {
-        closePipe?.()
-      });
-    }
+    //   readStream.on('end', () => {
+    //     closePipe?.()
+    //   });
+    // }
 
     return new Promise((resolve, reject) => {
       console.log(this.toString()) //TODO remove this
@@ -161,16 +164,16 @@ export class NsJail extends EventEmitter {
     })
   }
 
-  ready() {
-    if (!this.cmd_pipe_file) {
-      throw new Error('You must enable monitor first so that nsjail can send the pid to the nsjailRush')
-    }
-    return new Promise((resolve, reject) => {
-      this.onPidReceived = (pid) => {
-        resolve(pid)
-      }
-    })
-  }
+  // ready() {
+  //   if (!this.cmd_pipe_file) {
+  //     throw new Error('You must enable monitor first so that nsjail can send the pid to the nsjailRush')
+  //   }
+  //   return new Promise((resolve, reject) => {
+  //     this.onPidReceived = (pid) => {
+  //       resolve(pid)
+  //     }
+  //   })
+  // }
 
   forceTerminate() {
     if (this.nsjailProcess) {
@@ -583,12 +586,6 @@ export class NsJail extends EventEmitter {
   FileLimit_SizeWrite(write_limit_kb: number) {
     this.rlimit_fsize(write_limit_kb * 1024)
     return this
-  }
-
-  enable_monitor() {
-    const file_name = path.resolve('.' + this.jailName + '.pipe')
-    this.cmd_pipe_file = file_name
-    return this.add('cmd_pipe', file_name)
   }
 
   loadConfig(config: NsJailConfig) {
