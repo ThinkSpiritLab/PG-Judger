@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Thu May 30 2024                                              *
+ * Last Modified: Fri May 31 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -26,6 +26,8 @@ import { SqlModule } from './modules/sql/sql.module';
 import { BotzoneModule } from './modules/botzone/botzone.module';
 import { JudgeModule } from './modules/judge/judge.module';
 import { ExecModule } from './modules/exec/exec.module';
+import { LegacyMeterService } from './modules/meter/meter.service';
+import { MeterModule } from './modules/meter/meter.module';
 
 const env_file_path = process.env.NODE_ENV === 'production' ? 
   ['.env.production', '.env'] :
@@ -37,6 +39,7 @@ const env_file_path = process.env.NODE_ENV === 'production' ?
       envFilePath: env_file_path,
       isGlobal: true,
       validate, // schema see /src/misc/env.validation.ts
+      cache: true,
     }),
     CompileModule,
     PipelineModule,
@@ -45,6 +48,7 @@ const env_file_path = process.env.NODE_ENV === 'production' ?
     BotzoneModule,
     JudgeModule,
     ExecModule,
+    MeterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
