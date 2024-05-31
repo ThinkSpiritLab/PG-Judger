@@ -85,7 +85,7 @@ export class SimpleCompileProvider {
                 mode: 'rw'
               },
               {
-                source: this.configService.getOrThrow('HC_PATH'),
+                source: this.configService.getOrThrow('HC_PATH'), //TODO clean this
                 dest: this.configService.getOrThrow('HC_PATH'),
                 mode: 'ro'
               }
@@ -93,7 +93,7 @@ export class SimpleCompileProvider {
             uidMap: [{ inside: 0, outside: 0, count: 1 }],
             gidMap: [{ inside: 0, outside: 0, count: 1 }],
             cwd: env.temp_dir!,
-            rlimitFSIZE: 1024 * 1024 * 1024,
+            rlimitFSIZE: 1024 * 1024 * 1024, //TODO use config
             rlimitCPU: 'soft',
             rlimitSTACK: 64,
             rlimitAS: 4096,
