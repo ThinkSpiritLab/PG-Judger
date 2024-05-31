@@ -2,11 +2,8 @@ import { ChildProcessWithoutNullStreams, SpawnOptionsWithoutStdio, spawn } from 
 import { getgid, getuid } from "process"
 import * as fs from 'fs'
 import * as path from 'path'
-import * as mkfifo from 'mkfifo'
 import { UUID, randomUUID } from "crypto"
 import { EventEmitter } from "events";
-
-
 
 export class NsJail extends EventEmitter {
   static jail_path: string
@@ -573,8 +570,8 @@ export class NsJail extends EventEmitter {
     return this.rlimit_core(limit.cpu)
   }
 
-  MemLimit(limit_MB: number) {
-    this.rlimit_as(limit_MB * 1024)
+  MemLimit(limit_KB: number) {
+    this.rlimit_as(limit_KB)
     return this
   }
 

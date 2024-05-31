@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ExecService } from './exec.service';
 
 @Module({
-  providers: [ExecService]
+  providers: [ExecService],
+  exports: [ExecService]
 })
 export class ExecModule {}

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { exec } from "child_process";
+import { Injectable } from '@nestjs/common'
+import { exec, spawn } from 'child_process'
 
 @Injectable()
 export class ExecService {
@@ -13,8 +13,35 @@ export class ExecService {
       })
     })
   }
-  
-  
 
+  async runCommandTimeout(command: string, timeout: number) {
+    return new Promise((resolve, reject) => {
+      const timerId = setTimeout(() => {
+        child.kill()
+        reject('timeout')
+      }, timeout)
 
+      const child = exec(command, (error, stdout, stderr) => {
+        if (error) {
+          reject(stderr)
+        }
+        clearTimeout(timerId)
+        resolve(stdout)
+      })
+    })
+  }
+
+  // run a interactive command (stdin may be required)
+  async runInteractiveCommand(command: string, args: string[]) {
+    const child = spawn(command, args)
+
+    child.stdout.setEncoding('utf8')
+
+    return {
+      stdout: child.stdout,
+      stderr: child.stderr,
+      stdin: child.stdin,
+      child
+    }
+  }
 }
