@@ -25,6 +25,7 @@ import { JailModule } from './modules/jail/jail.module';
 import { SqlModule } from './modules/sql/sql.module';
 import { BotzoneModule } from './modules/botzone/botzone.module';
 import { JudgeModule } from './modules/judge/judge.module';
+import { ExecModule } from './modules/exec/exec.module';
 
 const env_file_path = process.env.NODE_ENV === 'production' ? 
   ['.env.production', '.env'] :
@@ -43,6 +44,7 @@ const env_file_path = process.env.NODE_ENV === 'production' ?
     SqlModule,
     BotzoneModule,
     JudgeModule,
+    ExecModule,
   ],
   controllers: [AppController],
   providers: [AppService],
