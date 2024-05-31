@@ -15,7 +15,7 @@
  */
 
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsUrl, Max, Min, validateSync } from 'class-validator';
+import { IsEnum, IsNumber, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
 enum Environment {
   Development = "development",
@@ -35,6 +35,9 @@ class EnvironmentVariables {
 
   @IsUrl({ host_whitelist: ['localhost'] })
   CONTROLLER_URL: string;
+
+  @IsString()
+  NSJAIL_PATH: string
 }
 
 export function validate(config: Record<string, unknown>) {
