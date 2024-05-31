@@ -1,3 +1,6 @@
 [submodule "nsjail"]
 	path = nsjail
 	url = https://github.com/google/nsjail.git
+[submodule "Heng-Core"]
+	path = Heng-Core
+	url = git@github.com:ThinkSpiritLab/Heng-Core.git
