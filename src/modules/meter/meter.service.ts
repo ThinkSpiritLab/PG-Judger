@@ -13,7 +13,7 @@ const logger = new Logger('MeterService')
 
 export type CompleteStdioOptions = Array<
   'pipe' | 'ipc' | 'ignore' | 'inherit' | Stream | number | null | undefined
->
+>//TODO move this
 export interface BasicSpawnOption {
   stdio?: CompleteStdioOptions
 }
@@ -39,8 +39,9 @@ export interface HengSpawnOption {
 }
 
 @Injectable()
-export class LegacyMeterService {
+export class MeterService {
   constructor(private readonly configService: ConfigService) {}
+  hc_path = this.configService.get('HC_PATH')
 
   useMeter(
     meterOption: MeterSpawnOption
@@ -131,6 +132,41 @@ export class LegacyMeterService {
         return subProcess
       }
     }
+  }
+
+  prepareFullMeterCommand(meterOption: MeterSpawnOption, command: string, args: string[]){
+    const hcArgs: string[] = []
+
+    if (meterOption.timeLimit) {
+      hcArgs.push('-t', Math.ceil(meterOption.timeLimit).toString())
+      hcArgs.push('-cpu', '1')
+    }
+
+    if (meterOption.memoryLimit) {
+      hcArgs.push('-m', Math.ceil(meterOption.memoryLimit).toString())
+    }
+
+    if (meterOption.pidLimit) {
+      hcArgs.push('-p', Math.ceil(meterOption.pidLimit).toString())
+    }
+
+    if (meterOption.uid) {
+      hcArgs.push('-u', meterOption.uid.toString())
+    }
+    if (meterOption.gid) {
+      hcArgs.push('-g', meterOption.gid.toString())
+    }
+
+    hcArgs.push('-f', meterOption.meterFd.toString())
+
+    hcArgs.push('--bin', command)
+
+    hcArgs.push('--args', ...args)
+
+    return [
+      this.hc_path,
+      hcArgs
+    ] as [string, string[]]
   }
 }
 

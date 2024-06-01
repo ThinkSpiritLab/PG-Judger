@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { SimpleCompileProvider } from './pipelines/g++'
 import { tmpdir } from 'os'
 import { JailService } from '../jail/jail.service';
-import { LegacyMeterService } from '../meter/meter.service';
+import { MeterService } from '../meter/meter.service';
 import { LegacyJailService } from '../jail/jail.legacy';
 
 @Injectable()
@@ -10,16 +10,16 @@ export class CompileService {
   constructor(
     private readonly simpleCompileProvider: SimpleCompileProvider,
     private readonly jailService: JailService,
-    private readonly legacyMeterService: LegacyMeterService,
+    private readonly legacyMeterService: MeterService,
     private readonly legacyJailService: LegacyJailService
   ) {
-    this.test()
-      .then(() => {
-        console.log('done')
-      })
-      .catch((e) => {
-        console.error(e)
-      })
+    // this.test()
+    //   .then(() => {
+    //     console.log('done')
+    //   })
+    //   .catch((e) => {
+    //     console.error(e)
+    //   })
   }
   async test() {
     const action = this.simpleCompileProvider.compileCppPipelineFactory({

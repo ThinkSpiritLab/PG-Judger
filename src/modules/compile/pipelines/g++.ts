@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Fri May 31 2024                                              *
+ * Last Modified: Sat Jun 01 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -24,7 +24,7 @@ import { writeFile, rm } from 'fs/promises'
 import { TMP_DIR_PREFIX } from '../constant'
 import {
   BasicSpawnOption,
-  LegacyMeterService
+  MeterService
 } from '@/modules/meter/meter.service'
 import { spawn } from 'child_process'
 import { LegacyJailService } from '../../jail/jail.legacy'
@@ -45,7 +45,7 @@ type CppCompileEnv = {
 export class SimpleCompileProvider {
   constructor(
     private readonly execService: ExecService,
-    private readonly legacyMeterService: LegacyMeterService,
+    private readonly legacyMeterService: MeterService,
     private readonly legacyJailService: LegacyJailService,
     private readonly configService: ConfigService
   ) {}
@@ -66,7 +66,7 @@ export class SimpleCompileProvider {
           env.output = exec
 
           const metered = this.legacyMeterService.useMeter({
-            meterFd: 3,
+            meterFd: 4,
             memoryLimit: 1024 * 1024 * 1024, //XXX if not run as root, MEM limit set will fail
             timeLimit: 200000,
             pidLimit: 500,
@@ -76,7 +76,7 @@ export class SimpleCompileProvider {
           })
 
           const jailed = this.legacyJailService.useJail({
-            passFd: [0, 1, 2, 3],
+            passFd: [0, 1, 2, 3, 4],
             timeLimit: 200000,
             // rlimitSTACK: 64,
             bindMount: [
@@ -102,7 +102,7 @@ export class SimpleCompileProvider {
           const spn = (command: string, args: string[]) => {
             console.log(`command: ${command} ${args.join(' ')}`)
             return spawn(command, args, {
-              stdio: ['ignore', 'pipe', 'pipe', 'pipe']
+              stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe']
             })
           }
 

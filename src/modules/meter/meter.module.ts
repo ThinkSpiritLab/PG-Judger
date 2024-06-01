@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
-import { LegacyMeterService } from './meter.service'
+import { MeterService } from './meter.service'
 
 @Module({
-  providers: [LegacyMeterService],
-  exports: [LegacyMeterService]
+  providers: [MeterService],
+  exports: [MeterService]
 })
 export class MeterModule {}
