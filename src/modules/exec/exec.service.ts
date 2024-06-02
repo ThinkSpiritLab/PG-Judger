@@ -83,9 +83,9 @@ export class ExecService {
       meterArgs
     )
 
-    console.log(
-      `jailExec: ${jailExec} ${jailArgs.join(' ')}`
-    )
+    // console.log(
+    //   `jailExec: ${jailExec} ${jailArgs.join(' ')}`
+    // )
 
     // console.log(`stdio: ${stdio}, meterFd: ${meterOption.meterFd}`)
 

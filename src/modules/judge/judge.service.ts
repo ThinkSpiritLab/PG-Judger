@@ -6,6 +6,7 @@ import {
   CommonJudgeOption,
   CommonJudgeStore
 } from '../compile/pipelines/common'
+import { rm } from 'fs/promises'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -92,8 +93,11 @@ export class JudgeService {
         type: 'plain-text',
         content: `
         #include <iostream>
+        using namespace std;
         int main() {
-          std::cout << "Hello, World!" << std::endl;
+          int a, b;
+          cin >> a >> b;
+          cout << a + b << endl;
           return 0;
         }
         `
@@ -121,29 +125,54 @@ export class JudgeService {
 
     const compileRes = await this.compileService.compile(execInfo)
     const store = compileRes.store as CommonCompileStore
-    console.log('compile phase done', store)
+    // console.log('compile phase done', store)
 
     const judgePipelineFactory = this.pipelineService.getPipeline(
       'common-run-testcase'
     )
-    const judgePipeline = judgePipelineFactory({
-      case: {
-        input: '1\n',
-        output: '1\n',
-      },
-      // tempDir: 'SET IN RUNTIME',
-      // targetPath: 'SET IN RUNTIME',
-      jailOption: {
-        uidMap: [{inside: 0, outside: 0, count: 1}],
-        gidMap: [{inside: 0, outside: 0, count: 1}],
-      },
-      meterOption: {},
-    } satisfies CommonJudgeOption)
 
-    const judgeRes = await judgePipeline.run<CommonJudgeStore>({
-      targetPath: store.targetPath,
-      tempDir: store.tempDir,
-    })
+    const testcases = [
+      {
+        input: '1 1\n',
+        output: '2\n'
+      },
+      {
+        input: '2 2\n',
+        output: '4\n'
+      },
+      {
+        input: '3 3\n',
+        output: '6\n'
+      },
+      {
+        input: '4 4\n',
+        output: '8\n'
+      },
+      {
+        input: '5 5\n',
+        output: '10\n'
+      }
+    ]
+
+    for(const testcase of testcases) {
+      const judgePipeline = judgePipelineFactory({
+        case: testcase,
+        jailOption: {
+          uidMap: [{inside: 0, outside: 0, count: 1}],
+          gidMap: [{inside: 0, outside: 0, count: 1}],
+        },
+        meterOption: {},
+      } satisfies CommonJudgeOption)
+  
+      const judgeRes = await judgePipeline.run<CommonJudgeStore>({
+        targetPath: store.targetPath,
+        tempDir: store.tempDir,
+      })
+    }
+
+    const temp_dir = store.tempDir
+    // clean up
+    rm(temp_dir, {recursive: true})
   }
 
   async judge(req: JudgeRequest) {

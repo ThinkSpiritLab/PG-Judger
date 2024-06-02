@@ -31,6 +31,7 @@ import { JailSpawnOption, LegacyJailService } from '../../jail/jail.legacy'
 import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
+import { CompareService } from '../../compare/compare.service'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -73,7 +74,8 @@ export class CommonPipelineProvider {
     private readonly execService: ExecService,
     private readonly legacyMeterService: MeterService,
     private readonly legacyJailService: LegacyJailService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly compareService: CompareService
   ) {}
 
   @RegisterPipeline('common-compile')
@@ -116,6 +118,8 @@ export class CommonPipelineProvider {
               task.measure
             ])
 
+            console.log(`compile measure: ${JSON.stringify(measure)}`)
+
             ctx.store.exit_code = exit_code
             ctx.store.measure = measure!
             ctx.store.targetPath = option.targetPath
@@ -154,42 +158,52 @@ export class CommonPipelineProvider {
           return { caseInputPath, caseOutputPath, userOutputPath }
         },
         { name: 'prep-files' }
-      ).pipe(
-        async ({ caseInputPath, caseOutputPath, userOutputPath }) => {
-          const [caseInputFD, userOutputFD] = await Promise.all([
-            open(caseInputPath, 'r'),
-            open(userOutputPath, 'w')
-          ])
-
-          try {
-            const task = await this.execService.runWithJailAndMeterFasade({
-              command: ctx.store.targetPath!,
-              args: [],
-              memory_kb: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
-              timeout_ms: option.meterOption.timeLimit || 2000,
-              stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
-              cwd: ctx.store.tempDir,
-              bindMount: [{ source: ctx.store.tempDir, mode: 'rw' }]
-            })
-
-            task.start()
-
-            const [exit_code, measure] = await Promise.all([
-              task.getExitAwaiter(),
-              task.measure
+      )
+        .pipe(
+          async ({ caseInputPath, caseOutputPath, userOutputPath }) => {
+            const [caseInputFD, userOutputFD] = await Promise.all([
+              open(caseInputPath, 'r'),
+              open(userOutputPath, 'w')
             ])
 
-            ctx.store['user_exit_code'] = exit_code
-            ctx.store['user_measure'] = measure
+            try {
+              const task = await this.execService.runWithJailAndMeterFasade({
+                command: ctx.store.targetPath!,
+                args: [],
+                memory_kb: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
+                timeout_ms: option.meterOption.timeLimit || 2000,
+                stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
+                cwd: ctx.store.tempDir,
+                bindMount: [{ source: ctx.store.tempDir, mode: 'rw' }]
+              })
 
-            console.log(`user_exit_code: ${exit_code}`)
-            console.log(`user_measure: ${measure}`)
-          } catch (error) {} finally {
-            await Promise.all([caseInputFD.close(), userOutputFD.close()])
-          }
-        },
-        { name: 'run-user' }
-      )
+              task.start()
+
+              const [exit_code, measure] = await Promise.all([
+                task.getExitAwaiter(),
+                task.measure
+              ])
+
+              ctx.store['user_exit_code'] = exit_code
+              ctx.store['user_measure'] = measure
+
+              console.log(`user_exit_code: ${exit_code}`)
+              console.log(`user_measure: ${JSON.stringify(measure)}`)
+            } catch (error) {
+            } finally {
+              await Promise.all([caseInputFD.close(), userOutputFD.close()])
+            }
+            return { caseOutputPath, userOutputPath }
+          },
+          { name: 'run-user' }
+        )
+        .pipe(
+          async ({ caseOutputPath, userOutputPath }) => {
+            const result = await this.compareService.compare(caseOutputPath, userOutputPath, 'normal')
+            console.log(`compare result: ${result}`)
+          },
+          { name: 'compare' }
+        )
     })
   }
 }

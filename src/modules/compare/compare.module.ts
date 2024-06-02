@@ -5,6 +5,7 @@ import { ExecModule } from '../exec/exec.module'
 
 @Module({
   imports: [JailModule, ExecModule],
-  providers: [CompareService]
+  providers: [CompareService],
+  exports: [CompareService]
 })
 export class CompareModule {}
