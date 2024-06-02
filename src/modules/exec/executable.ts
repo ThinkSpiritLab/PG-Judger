@@ -26,21 +26,40 @@ class Executable extends EventEmitter {
   private childProcess: ChildProcess | null = null
   private _stdio: CompleteStdioOptions
 
-  public exit: Promise<number> = new Promise((resolve, reject) => {
-    this.on('close', (code: number) => {
-      resolve(code)
-    })
+  // public exit: Promise<number> = new Promise((resolve, reject) => {
+  //   //XXX this will not work because this piece of code will be executed before the process is started
+  //   if (!this.childProcess) {
+  //     console.warn('Process not found, did you forget to start it?')
+  //     reject(-1)
+  //     return
+  //   }
 
-    this.on('error', (err: Error) => {
-      console.error(err)
-      reject(-1)
-    })
+  //   this.on('close', (code: number) => {
+  //     resolve(code)
+  //   })
 
-    this.on('exit', (code: number) => {
-      resolve(code)
-    })
-  })
+  //   this.on('exit', (code: number) => {
+  //     resolve(code)
+  //   })
+  // })
 
+  public getExitAwaiter() {
+    return new Promise<number>((resolve, reject) => {
+      if (!this.childProcess) { // this works fine
+        console.warn('Process not found, did you forget to start it?')
+        reject(-1)
+        return
+      }
+
+      this.on('close', (code: number) => {
+        resolve(code)
+      })
+
+      this.on('exit', (code: number) => {
+        resolve(code)
+      })
+    })
+  }
 
   constructor({
     executablePath,
@@ -57,10 +76,14 @@ class Executable extends EventEmitter {
     this._stdio = stdio
   }
 
-  public start(): void {
+  public start() {
     this.childProcess = spawn(this._executablePath, this._args, {
       stdio: this._stdio
     })
+
+    if (!this.childProcess) {
+      throw new Error('Failed to start process.')
+    }
 
     this.childProcess.stdout?.on('data', (data: Buffer) => {
       this.emit('stdout', data.toString())
@@ -81,6 +104,8 @@ class Executable extends EventEmitter {
     this.childProcess.on('exit', (code: number) => {
       this.emit('exit', code)
     })
+
+    return this.childProcess
   }
 
   public write(input: string): void {
@@ -146,8 +171,8 @@ class MeteredExecuable extends Executable {
 
   measure: Promise<MeterResult> | null = null
 
-  override start(): void {
-    super.start()
+  override start()  {
+    const process = super.start()
 
     this.measure = new Promise((resolve, reject) => {
       if (!this.process) {
@@ -174,6 +199,8 @@ class MeteredExecuable extends Executable {
         }
       })
     })
+
+    return process
   }
 }
 

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import { CommonCompileOption, CommonCompileStore, SimpleCompileProvider } from './pipelines/g++'
+import {
+  CommonCompileOption,
+  CommonCompileStore,
+  SimpleCompileProvider
+} from './pipelines/g++'
 import { tmpdir } from 'os'
 import { JailService } from '../jail/jail.service'
 import { MeterService } from '../meter/meter.service'
@@ -19,30 +23,14 @@ export class CompileService {
   ) {
     setTimeout(() => {
       this.test2()
-        .then((res) => {
-          console.log('done', res)
+        .then(({ store }) => {
+          console.log('compile phase done', store)
         })
         .catch((e) => {
-          console.error(e)
+          console.error(`compile failed: `, e)
         })
     }, 600)
   }
-  // async test() {
-  //   const action = this.simpleCompileProvider.compileCppPipelineFactory({
-  //     compiler: '/usr/bin/g++',
-  //     source_file: 'main.cpp',
-  //     source: `#include <iostream>
-  //     int main() {
-  //       std::cout << "Hello, World!" << std::endl;
-  //       return 0;
-  //     }
-  //     `,
-  //     target: 'main',
-  //     flags: ['-O2', '-std=c++17']
-  //   })
-
-  //   await action()
-  // }
 
   async test2() {
     const execInfo: ExecutableInfo = {
@@ -76,7 +64,7 @@ export class CompileService {
         }
       }
     }
-    await this.compile(execInfo)
+    return await this.compile(execInfo)
   }
 
   async compile(execInfo: ExecutableInfo) {
@@ -97,13 +85,14 @@ export class CompileService {
       )
     }
 
-    const pipelineFactory = this.pipelineService.getPipeline(configs.compile.use)
+    const pipelineFactory = this.pipelineService.getPipeline(
+      configs.compile.use
+    )
     const pipeline = pipelineFactory(configs.compile.option)
 
-    const res = await pipeline.run<CommonCompileStore>({
+    return await pipeline.run<CommonCompileStore>({
       source: execInfo.src.content
-    }) //add validation
-    console.log(`res`, res)
+    }) //TODO add validation
   }
 }
 

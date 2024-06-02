@@ -14,6 +14,8 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
+import { timed } from "@/utils/async"
+
 type TaskAction<In, Out> = (input: In) => PromiseLike<Out> | Out
 
 class Task<In, Out> {
@@ -57,12 +59,11 @@ type PipelineTaskData<In = any, Out = any> = {
     [key: string]: any
   }
   result: Out
-  exit_code: number
 }
-type PipelineCtx = {
+type PipelineCtx<Store = {}> = {
   tasks: PipelineTaskData[]
   pipeline: Pipeline
-  store: {
+  store: Store & {
     [key: string]: any
   }
   get(name: string): PipelineTaskData | undefined
@@ -105,8 +106,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
       desc: desc || 'no description',
       task: new Task(task),
       context: ctx || {},
-      result: undefined,
-      exit_code: Number.NaN
+      result: undefined
     })
     return this as unknown as Pipeline<[...Ts, T]>
   }
@@ -132,14 +132,17 @@ class Pipeline<Ts extends AnyFunction[] = []> {
 
   async run<T extends PipelineStore = PipelineStore>(init_store: T) {
     this.setStore(init_store)
-    console.log('store set to', init_store)
     try {
       let result: any = null
       for (const task of this._ctx.tasks) {
-        result = await task.task.run(result) // may take in context?
-        task.result = result
-        console.log(`task ${task.name} done with result`, result)
+        
+        const [output, time_ms] = await timed(() => task.task.run(result))
+        
+        console.log(`Task ${task.name} finished  (+${time_ms}ms)`)
+
+        task.result = result = output
       }
+      
       return this._ctx
     } catch (e) {
       throw e

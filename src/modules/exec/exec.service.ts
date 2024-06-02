@@ -83,9 +83,11 @@ export class ExecService {
       meterArgs
     )
 
-    console.log(
-      `jailExec: ${jailExec} ${jailArgs.join(' ')}`
-    )
+    // console.log(
+    //   `jailExec: ${jailExec} ${jailArgs.join(' ')}`
+    // )
+
+    // console.log(`stdio: ${stdio}, meterFd: ${meterOption.meterFd}`)
 
     return new MeteredExecuable(
       {
@@ -128,7 +130,7 @@ export class ExecService {
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit'>) {
 
-    while (stdio.length < 3) stdio.push('ignore') 
+    while (stdio.length < 3) stdio.push('pipe') 
     stdio.push('pipe') // append a pipe for meter
 
     const meter: MeterSpawnOption = {
