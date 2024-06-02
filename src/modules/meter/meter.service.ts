@@ -13,7 +13,7 @@ const logger = new Logger('MeterService')
 
 export type CompleteStdioOptions = Array<
   'pipe' | 'ipc' | 'ignore' | 'inherit' | Stream | number | null | undefined
->//TODO move this
+> //TODO move this
 export interface BasicSpawnOption {
   stdio?: CompleteStdioOptions
 }
@@ -134,7 +134,11 @@ export class MeterService {
     }
   }
 
-  prepareFullMeterCommand(meterOption: MeterSpawnOption, command: string, args: string[]){
+  prepareFullMeterCommand(
+    meterOption: MeterSpawnOption,
+    command: string,
+    args: string[]
+  ) {
     const hcArgs: string[] = []
 
     if (meterOption.timeLimit) {
@@ -160,13 +164,9 @@ export class MeterService {
     hcArgs.push('-f', meterOption.meterFd.toString())
 
     hcArgs.push('--bin', command)
+    if (args.length > 0) hcArgs.push('--args', ...args)
 
-    hcArgs.push('--args', ...args)
-
-    return [
-      this.hc_path,
-      hcArgs
-    ] as [string, string[]]
+    return [this.hc_path, hcArgs] as [string, string[]]
   }
 }
 

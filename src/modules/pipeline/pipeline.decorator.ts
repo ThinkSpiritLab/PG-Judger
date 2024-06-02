@@ -6,7 +6,7 @@ import { Pipeline } from './pipeline'
 
 export function RegisterPipeline<T, K extends keyof T>(name: string) {
   return (
-    target: T[K] extends (...args: any[]) => Pipeline ? T : "You can only use this decorator on a pipeline function",
+    target: T[K] extends (...args: any[]) => Pipeline<any> ? T : "You can only use this decorator on a pipeline function",
     propertyKey: K,
     descriptor: PropertyDescriptor
   ) => {

@@ -53,8 +53,6 @@ export class CompareService {
   }
 
   async compare(a: string, b: string, mode: CompareMode) {
-
-    
     let cmp: MeteredExecuable | null = null
     let aFH: FileHandle | null = null
     let bFH: FileHandle | null = null

@@ -1,4 +1,11 @@
 import { Injectable } from '@nestjs/common'
+import { CompileService } from '../compile/compile.service'
+import { PipelineService } from '../pipeline/pipeline.service'
+import {
+  CommonCompileStore,
+  CommonJudgeOption,
+  CommonJudgeStore
+} from '../compile/pipelines/common'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -38,11 +45,11 @@ export type ExecutableInfo = {
 type BaseJudgeRequest = {
   id: string
 }
-type TestCase = {
+export type TestCase = {
   input: string
   output: string
 }
-type TestPolicy = 'fuse' | 'all'
+export type TestPolicy = 'fuse' | 'all'
 
 type NormalJudgeRequest = BaseJudgeRequest & {
   user: ExecutableInfo
@@ -70,6 +77,75 @@ type JudgeRequest =
   | InteractiveJudgeRequest
 @Injectable()
 export class JudgeService {
+  constructor(
+    private readonly compileService: CompileService,
+    private readonly pipelineService: PipelineService
+  ) {
+    setTimeout(() => {
+      this.test()
+    }, 600)
+  }
+
+  async test() {
+    const execInfo: ExecutableInfo = {
+      src: {
+        type: 'plain-text',
+        content: `
+        #include <iostream>
+        int main() {
+          std::cout << "Hello, World!" << std::endl;
+          return 0;
+        }
+        `
+      },
+      env: {
+        lang: 'cpp',
+        arch: 'x64',
+        options: {},
+        system: 'linux'
+      },
+      limit: {
+        compiler: {
+          cpuTime: 1000,
+          memory: 1024,
+          message: 1024,
+          output: 1024
+        },
+        runtime: {
+          cpuTime: 1000,
+          memory: 1024,
+          output: 1024
+        }
+      }
+    }
+
+    const compileRes = await this.compileService.compile(execInfo)
+    const store = compileRes.store as CommonCompileStore
+    console.log('compile phase done', store)
+
+    const judgePipelineFactory = this.pipelineService.getPipeline(
+      'common-run-testcase'
+    )
+    const judgePipeline = judgePipelineFactory({
+      case: {
+        input: '1\n',
+        output: '1\n',
+      },
+      // tempDir: 'SET IN RUNTIME',
+      // targetPath: 'SET IN RUNTIME',
+      jailOption: {
+        uidMap: [{inside: 0, outside: 0, count: 1}],
+        gidMap: [{inside: 0, outside: 0, count: 1}],
+      },
+      meterOption: {},
+    } satisfies CommonJudgeOption)
+
+    const judgeRes = await judgePipeline.run<CommonJudgeStore>({
+      targetPath: store.targetPath,
+      tempDir: store.tempDir,
+    })
+  }
+
   async judge(req: JudgeRequest) {
     switch (req.type) {
       case 'normal':
@@ -81,9 +157,7 @@ export class JudgeService {
     }
   }
 
-  async normalJudge(req: NormalJudgeRequest) {
-    
-  }
+  async normalJudge(req: NormalJudgeRequest) {}
 
   async spjJudge(req: SpjJudgeRequest) {
     // TODO

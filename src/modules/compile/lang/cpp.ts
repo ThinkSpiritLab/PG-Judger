@@ -14,7 +14,7 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { CommonCompileOption } from "../pipelines/g++";
+import { CommonCompileOption, CommonJudgeOption } from "../pipelines/common";
 
 export const cpp = {
   lang: 'cpp',
@@ -38,13 +38,20 @@ export const cpp = {
       } satisfies CommonCompileOption,
     },
     run: {
-      executable: 'main',
-      args: [],
-      stdio: {
-        stdin: 'stdin',
-        stdout: 'stdout',
-        stderr: 'stderr'
-      }
+      use: 'common-run-testcase',
+      option: {
+        case: {
+          input: '1\n',
+          output: '1\n',
+        },
+        // tempDir: 'SET IN RUNTIME',
+        // targetPath: 'SET IN RUNTIME',
+        jailOption: {
+          uidMap: [{inside: 0, outside: 0, count: 1}],
+          gidMap: [{inside: 0, outside: 0, count: 1}],
+        },
+        meterOption: {},
+      } satisfies CommonJudgeOption
     }
   }
 }

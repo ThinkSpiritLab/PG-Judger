@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import {
-  CommonCompileOption,
-  CommonCompileStore,
-  SimpleCompileProvider
-} from './pipelines/g++'
+  CommonPipelineProvider
+} from './pipelines/common'
 import { tmpdir } from 'os'
 import { JailService } from '../jail/jail.service'
 import { MeterService } from '../meter/meter.service'
@@ -15,21 +13,21 @@ import { PipelineService } from '../pipeline/pipeline.service'
 @Injectable()
 export class CompileService {
   constructor(
-    private readonly simpleCompileProvider: SimpleCompileProvider,
+    private readonly simpleCompileProvider: CommonPipelineProvider,
     private readonly jailService: JailService,
     private readonly legacyMeterService: MeterService,
     private readonly legacyJailService: LegacyJailService,
     private readonly pipelineService: PipelineService
   ) {
-    setTimeout(() => {
-      this.test2()
-        .then(({ store }) => {
-          console.log('compile phase done', store)
-        })
-        .catch((e) => {
-          console.error(`compile failed: `, e)
-        })
-    }, 600)
+    // setTimeout(() => {
+    //   this.test2()
+    //     .then(({ store }) => {
+    //       console.log('compile phase done', store)
+    //     })
+    //     .catch((e) => {
+    //       console.error(`compile failed: `, e)
+    //     })
+    // }, 600)
   }
 
   async test2() {
@@ -67,6 +65,7 @@ export class CompileService {
     return await this.compile(execInfo)
   }
 
+
   async compile(execInfo: ExecutableInfo) {
     const languageConfiguration = searchLangConfigByExecInfo(execInfo)
 
@@ -90,7 +89,7 @@ export class CompileService {
     )
     const pipeline = pipelineFactory(configs.compile.option)
 
-    return await pipeline.run<CommonCompileStore>({
+    return await pipeline.run({
       source: execInfo.src.content
     }) //TODO add validation
   }

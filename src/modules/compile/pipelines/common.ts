@@ -1,5 +1,5 @@
 /*
- * File: g++.ts                                                                *
+ * File: common.ts                                                                *
  * Project: pg-judger                                                          *
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
@@ -20,19 +20,24 @@ import { Injectable } from '@nestjs/common'
 import { ExecService } from '@/modules/exec/exec.service'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { writeFile, rm } from 'fs/promises'
+import { writeFile, rm, open } from 'fs/promises'
 import { TMP_DIR_PREFIX } from '../constant'
-import { MeterService, MeterSpawnOption } from '@/modules/meter/meter.service'
+import {
+  MeterResult,
+  MeterService,
+  MeterSpawnOption
+} from '@/modules/meter/meter.service'
 import { JailSpawnOption, LegacyJailService } from '../../jail/jail.legacy'
 import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
+import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 
 export type CommonCompileOption = {
   skip: boolean
   compilerExec: string
   compilerArgs: string[]
-  jailOption: JailSpawnOption
-  meterOption: Omit<MeterSpawnOption, 'meterFd'>
+  jailOption: JailSpawnOption //TODO remove legacy option
+  meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
   sourceName: string
   targetName: string
   tempDir?: string
@@ -41,10 +46,29 @@ export type CommonCompileOption = {
 
 export type CommonCompileStore = {
   source: string
+  targetPath: string
+  exit_code: number
+  measure: MeterResult
+  tempDir: string
 }
 
+export type CommonJudgeOption = {
+  jailOption: JailSpawnOption //TODO remove legacy option
+  meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
+
+  case: TestCase
+}
+
+export type CommonJudgeStore = {
+  targetPath: string
+  tempDir: string
+  user_exit_code?: number
+  user_measure?: MeterResult
+}
+
+//TODO move this to an invidual module
 @Injectable()
-export class SimpleCompileProvider {
+export class CommonPipelineProvider {
   constructor(
     private readonly execService: ExecService,
     private readonly legacyMeterService: MeterService,
@@ -54,8 +78,7 @@ export class SimpleCompileProvider {
 
   @RegisterPipeline('common-compile')
   commonCompilePipelineFactory(option: CommonCompileOption) {
-    // create a pipeline that accepts CommonCompileEnv, and when runned successfully, output the compiled file path
-    const p = Pipeline.create(({ pipe, ctx }) => {
+    return Pipeline.create<CommonCompileStore>(({ pipe, ctx }) => {
       return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), {
         name: 'create-temp-dir'
       })
@@ -93,13 +116,80 @@ export class SimpleCompileProvider {
               task.measure
             ])
 
-            ctx.store['exit_code'] = exit_code
-            ctx.store['measure'] = measure
+            ctx.store.exit_code = exit_code
+            ctx.store.measure = measure!
+            ctx.store.targetPath = option.targetPath
+            ctx.store.tempDir = option.tempDir!
           },
           { name: 'compile-jailed' }
         )
+        .catch(T.unlink(option.tempDir!))
     })
+  }
 
-    return p
+  @RegisterPipeline('common-run-testcase')
+  // note that this only test a single testcase
+  commonJudgePipelineFactory(option: CommonJudgeOption) {
+    return Pipeline.create(({ pipe, ctx }) => {
+      // process:
+      //    - create temp files for input and output
+      //    - run the target program with input file as stdin and output file as stdout
+
+      return pipe(
+        async () => {
+          if (!ctx.store.tempDir) {
+            throw new Error('tempDir is not set')
+          }
+
+          const caseInputPath = join(ctx.store.tempDir, 'case-input')
+          const caseOutputPath = join(ctx.store.tempDir, 'case-output')
+          const userOutputPath = join(ctx.store.tempDir, 'user-output')
+
+          await Promise.all([
+            writeFile(caseInputPath, option.case.input),
+            writeFile(caseOutputPath, option.case.output),
+            writeFile(userOutputPath, '')
+          ])
+
+          return { caseInputPath, caseOutputPath, userOutputPath }
+        },
+        { name: 'prep-files' }
+      ).pipe(
+        async ({ caseInputPath, caseOutputPath, userOutputPath }) => {
+          const [caseInputFD, userOutputFD] = await Promise.all([
+            open(caseInputPath, 'r'),
+            open(userOutputPath, 'w')
+          ])
+
+          try {
+            const task = await this.execService.runWithJailAndMeterFasade({
+              command: ctx.store.targetPath!,
+              args: [],
+              memory_kb: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
+              timeout_ms: option.meterOption.timeLimit || 2000,
+              stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
+              cwd: ctx.store.tempDir,
+              bindMount: [{ source: ctx.store.tempDir, mode: 'rw' }]
+            })
+
+            task.start()
+
+            const [exit_code, measure] = await Promise.all([
+              task.getExitAwaiter(),
+              task.measure
+            ])
+
+            ctx.store['user_exit_code'] = exit_code
+            ctx.store['user_measure'] = measure
+
+            console.log(`user_exit_code: ${exit_code}`)
+            console.log(`user_measure: ${measure}`)
+          } catch (error) {} finally {
+            await Promise.all([caseInputFD.close(), userOutputFD.close()])
+          }
+        },
+        { name: 'run-user' }
+      )
+    })
   }
 }

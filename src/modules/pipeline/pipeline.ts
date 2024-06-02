@@ -61,17 +61,17 @@ type NextTaskType<T extends AnyFunction[]> = T['length'] extends 0
 type PipelineStore = Record<string, any>
 
 class Pipeline<Ts extends AnyFunction[] = []> {
-  private _ctx: PipelineCtx = {
+  private _ctx: PipelineCtx<any> = {
     tasks: [],
     pipeline: this as unknown as Pipeline<[]>,
-    store: {},
+    store: {} as PipelineStore,
     get(name: string) {
       return this.tasks.find((task) => task.name === name)
     }
   }
 
   private _finally: AnyFunction | undefined
-
+  private _catch: AnyFunction | undefined
   private constructor() {}
 
   pipe<T extends NextTaskType<Ts>>(
@@ -94,6 +94,11 @@ class Pipeline<Ts extends AnyFunction[] = []> {
 
   finally<T extends AnyFunction>(task: T): Pipeline<Ts> {
     this._finally = task
+    return this as unknown as Pipeline<Ts>
+  }
+
+  catch<T extends AnyFunction>(task: T): Pipeline<Ts> {
+    this._catch = task
     return this as unknown as Pipeline<Ts>
   }
 
@@ -121,22 +126,24 @@ class Pipeline<Ts extends AnyFunction[] = []> {
 
       return this._ctx
     } catch (e) {
+      this._ctx.store.error = e
+      await this._catch?.(this._ctx)
       throw e
     } finally {
       await this._finally?.(this._ctx)
     }
   }
 
-  static create<T>(
+  static create<Store extends Record<string,any>>(
     fn: ({
       ctx,
       pipeline,
       pipe
     }: {
-      ctx: PipelineCtx
+      ctx: PipelineCtx<Store>
       pipeline: Pipeline<[]>
       pipe: Pipeline<[]>['pipe']
-    }) => T
+    }) => Pipeline
   ) {
     const pipeline = new Pipeline()
 
