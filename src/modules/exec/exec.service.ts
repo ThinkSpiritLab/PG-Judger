@@ -7,7 +7,7 @@ import {
   MeterSpawnOption
 } from '../meter/meter.service'
 import { JailSpawnOption, LegacyJailService } from '../jail/jail.legacy'
-import Executable, { MeteredExecuable } from './executable'
+import  { MeteredExecuable } from './executable'
 import { range } from 'lodash'
 import { ConfigService } from '@nestjs/config'
 
@@ -95,7 +95,8 @@ export class ExecService {
         args: jailArgs,
         stdio
       },
-      meterOption.meterFd
+      meterOption.meterFd,
+
     )
   }
 
@@ -114,11 +115,11 @@ export class ExecService {
     env = {},
     uidMap = [],
     gidMap = [],
-    passFd = [],
-    rlimitAS = 1024 * 1024 * 128000,
-    rlimitCPU = 600000, //600s
-    rlimitFSIZE = 1024 * 1024 * 1000, //1MB
-    rlimitSTACK = 'soft', //8MB
+    passFd = [], // we pass all, cannot be set
+    rlimitAS = 1024 * 1024,
+    rlimitCPU = 600,
+    rlimitFSIZE = 1024 * 1024,
+    rlimitSTACK = 'soft', 
     symlink = [],
     tmpfsMount = []
   }: {

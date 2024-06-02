@@ -1,18 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { existsSync } from 'fs'
-import { NsJail } from './jail.driver'
-import { merge } from 'lodash'
 import { JailSpawnOption } from './jail.legacy'
 import { resolve } from 'path'
 import { spawn } from 'child_process'
 
 const logger = new Logger('JailService')
-
-const defaultJailConfig = {
-  time: 1000,
-  memory: 256
-}
 
 @Injectable()
 export class JailService {

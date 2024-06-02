@@ -32,6 +32,7 @@ import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareService } from '../../compare/compare.service'
+import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -134,11 +135,7 @@ export class CommonPipelineProvider {
   @RegisterPipeline('common-run-testcase')
   // note that this only test a single testcase
   commonJudgePipelineFactory(option: CommonJudgeOption) {
-    return Pipeline.create(({ pipe, ctx }) => {
-      // process:
-      //    - create temp files for input and output
-      //    - run the target program with input file as stdin and output file as stdout
-
+    return Pipeline.create<CommonJudgeStore>(({ pipe, ctx }) => {
       return pipe(
         async () => {
           if (!ctx.store.tempDir) {
@@ -179,17 +176,26 @@ export class CommonPipelineProvider {
 
               task.start()
 
-              const [exit_code, measure] = await Promise.all([
+              const [_, measure] = await Promise.all([
                 task.getExitAwaiter(),
                 task.measure
               ])
 
-              ctx.store['user_exit_code'] = exit_code
-              ctx.store['user_measure'] = measure
+              if (!measure) {
+                throw new RuntimeError('measure failed')
+              }
 
-              console.log(`user_exit_code: ${exit_code}`)
+              if (measure.returnCode !== 0) {
+                throw new RuntimeError('user program failed')
+              }
+
+              ctx.store.user_exit_code = measure.returnCode
+              ctx.store.user_measure = measure
+
+              console.log(`user_exit_code: ${measure?.returnCode}`)
               console.log(`user_measure: ${JSON.stringify(measure)}`)
             } catch (error) {
+              throw error
             } finally {
               await Promise.all([caseInputFD.close(), userOutputFD.close()])
             }

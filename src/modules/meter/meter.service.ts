@@ -8,6 +8,13 @@ import {
   JailSymlinkOption,
   JailTmpfsMountOption
 } from '../jail/jail.legacy'
+import { JudgeResultKind } from '../judge/judge.exceptions'
+import {
+  MemoryLimitExceededError,
+  OutputLimitExceededError,
+  RuntimeError,
+  TimeLimitExceededError
+} from '../pipeline/pipeline.exception'
 
 const logger = new Logger('MeterService')
 
@@ -187,6 +194,30 @@ export interface MeterResult {
     real: number // ms
     sys: number // ms
     usr: number // ms
+  }
+}
+
+export function testMeterOrThrow(
+  compileResult: MeterResult,
+  limit: { cpuTime: number; memory: number } 
+) {
+  const compileSumTime = compileResult.time.sys + compileResult.time.usr
+  if (compileResult.signal === 25) {
+    throw new OutputLimitExceededError('Output limit exceeded')
+  } else if (
+    compileSumTime > limit.cpuTime ||
+    (compileResult.time.real > limit.cpuTime &&
+      compileResult.returnCode === -1 &&
+      compileResult.signal === 9)
+  ) {
+    throw new TimeLimitExceededError('Time limit exceeded')
+  } else if (compileResult.memory >= limit.memory) {
+    throw new MemoryLimitExceededError('Memory limit exceeded')
+  } else if (compileResult.signal !== -1 || compileResult.returnCode !== 0) {
+    throw new RuntimeError('Runtime error', {
+      signal: compileResult.signal,
+      returnCode: compileResult.returnCode
+    })
   }
 }
 

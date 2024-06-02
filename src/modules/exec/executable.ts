@@ -16,9 +16,13 @@
 
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
-import { CompleteStdioOptions, MeterResult } from '../meter/meter.service'
+import { CompleteStdioOptions, MeterResult, testMeterOrThrow } from '../meter/meter.service'
 import { readStream } from '@/utils/io'
 import { Readable, Writable } from 'stream'
+import {
+  JailViolationError,
+  RuntimeError
+} from '../pipeline/pipeline.exception'
 
 class Executable extends EventEmitter {
   private _executablePath: string
@@ -26,26 +30,10 @@ class Executable extends EventEmitter {
   private childProcess: ChildProcess | null = null
   private _stdio: CompleteStdioOptions
 
-  // public exit: Promise<number> = new Promise((resolve, reject) => {
-  //   //XXX this will not work because this piece of code will be executed before the process is started
-  //   if (!this.childProcess) {
-  //     console.warn('Process not found, did you forget to start it?')
-  //     reject(-1)
-  //     return
-  //   }
-
-  //   this.on('close', (code: number) => {
-  //     resolve(code)
-  //   })
-
-  //   this.on('exit', (code: number) => {
-  //     resolve(code)
-  //   })
-  // })
-
   public getExitAwaiter() {
     return new Promise<number>((resolve, reject) => {
-      if (!this.childProcess) { // this works fine
+      if (!this.childProcess) {
+        // this works fine
         console.warn('Process not found, did you forget to start it?')
         reject(-1)
         return
@@ -161,26 +149,24 @@ class MeteredExecuable extends Executable {
       args?: string[]
       stdio: CompleteStdioOptions
     },
-    meterFd: number
+    private meterFd: number,
+    private limit?: { cpuTime: number; memory: number }
   ) {
     super(o)
-    this.meterFd = meterFd
   }
-
-  meterFd: number
 
   measure: Promise<MeterResult> | null = null
 
-  override start()  {
+  override start() {
     const process = super.start()
 
     this.measure = new Promise((resolve, reject) => {
       if (!this.process) {
-        reject(new Error('Process not started.'))
+        reject(new RuntimeError('Process not started.'))
         return
       }
       this.process.on('error', (err) => {
-        reject(err)
+        reject(new JailViolationError(err.message))
       })
       let resultStr = ''
       const resultStream: Readable = this.process.stdio[
@@ -188,12 +174,16 @@ class MeteredExecuable extends Executable {
       ] as Readable
       resultStream.setEncoding('utf-8')
       resultStream.on('error', (err) => {
-        reject(err)
+        reject(new RuntimeError('measure failed'))
       })
       resultStream.on('data', (chunk) => (resultStr += chunk))
       resultStream.on('end', () => {
         try {
-          resolve(JSON.parse(resultStr))
+          const result = JSON.parse(resultStr)
+          if (this.limit) {
+            testMeterOrThrow(result, this.limit)
+          }
+          resolve(result)
         } catch (e) {
           reject(e)
         }

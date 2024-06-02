@@ -91,14 +91,19 @@ export class JudgeService {
     const execInfo: ExecutableInfo = {
       src: {
         type: 'plain-text',
+        // content: `
+        // #include <iostream>
+        // using namespace std;
+        // int main() {
+        //   int a, b;
+        //   cin >> a >> b;
+        //   cout << a + b << endl;
+        //   return 0;
+        // }
+        // `
         content: `
-        #include <iostream>
-        using namespace std;
         int main() {
-          int a, b;
-          cin >> a >> b;
-          cout << a + b << endl;
-          return 0;
+          return 1;
         }
         `
       },
@@ -138,7 +143,7 @@ export class JudgeService {
       },
       {
         input: '2 2\n',
-        output: '4\n'
+        output: '114514\n'
       },
       {
         input: '3 3\n',
@@ -186,7 +191,34 @@ export class JudgeService {
     }
   }
 
-  async normalJudge(req: NormalJudgeRequest) {}
+  async normalJudge(req: NormalJudgeRequest) {
+    const compileRes = await this.compileService.compile(req.user)
+    const store = compileRes.store as CommonCompileStore
+
+    const judgePipelineFactory = this.pipelineService.getPipeline(
+      'common-run-testcase'
+    )
+
+    for (const testcase of req.cases) {
+      const judgePipeline = judgePipelineFactory({
+        case: testcase,
+        jailOption: {
+          uidMap: [{inside: 0, outside: 0, count: 1}],
+          gidMap: [{inside: 0, outside: 0, count: 1}],
+        },
+        meterOption: {},
+      } satisfies CommonJudgeOption)
+
+      const judgeRes = await judgePipeline.run<CommonJudgeStore>({
+        targetPath: store.targetPath,
+        tempDir: store.tempDir,
+      })
+    }
+
+    const temp_dir = store.tempDir
+    // clean up
+    rm(temp_dir, {recursive: true})
+  }
 
   async spjJudge(req: SpjJudgeRequest) {
     // TODO
