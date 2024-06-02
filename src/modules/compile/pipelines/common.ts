@@ -33,6 +33,7 @@ import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareService } from '../../compare/compare.service'
 import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
+import { JudgeRuntimeError } from '@/modules/judge/judge.exceptions'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -206,6 +207,13 @@ export class CommonPipelineProvider {
         .pipe(
           async ({ caseOutputPath, userOutputPath }) => {
             const result = await this.compareService.compare(caseOutputPath, userOutputPath, 'normal')
+
+            if (result === 'PE') {
+              throw new JudgeRuntimeError("presentation-error", "PE")
+            } else if (result === 'WA') {
+              throw new JudgeRuntimeError("wrong-answer", "WA")
+            }
+
             console.log(`compare result: ${result}`)
           },
           { name: 'compare' }

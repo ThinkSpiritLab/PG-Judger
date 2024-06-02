@@ -34,6 +34,7 @@ export type JudgeErrorReason =
   | 'compile-error'
   | 'wrong-answer'
   | 'judge-error'
+  | 'presentation-error'
 export enum JudgeResultKind {
   Accepted = 'Accepted',
   WrongAnswer = 'WrongAnswer',

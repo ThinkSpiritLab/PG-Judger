@@ -7,6 +7,7 @@ import {
   CommonJudgeStore
 } from '../compile/pipelines/common'
 import { rm } from 'fs/promises'
+import { JudgeRuntimeError } from './judge.exceptions'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -91,21 +92,21 @@ export class JudgeService {
     const execInfo: ExecutableInfo = {
       src: {
         type: 'plain-text',
-        // content: `
-        // #include <iostream>
-        // using namespace std;
-        // int main() {
-        //   int a, b;
-        //   cin >> a >> b;
-        //   cout << a + b << endl;
-        //   return 0;
-        // }
-        // `
         content: `
+        #include <iostream>
+        using namespace std;
         int main() {
-          return 1;
+          int a, b;
+          cin >> a >> b;
+          cout << a + b << endl;
+          return 0;
         }
         `
+        // content: `
+        // int main() {
+        //   return 1;
+        // }
+        // `
       },
       env: {
         lang: 'cpp',
@@ -127,7 +128,7 @@ export class JudgeService {
         }
       }
     }
-
+    const policy: TestPolicy = 'fuse'
     const compileRes = await this.compileService.compile(execInfo)
     const store = compileRes.store as CommonCompileStore
     // console.log('compile phase done', store)
@@ -169,10 +170,21 @@ export class JudgeService {
         meterOption: {},
       } satisfies CommonJudgeOption)
   
-      const judgeRes = await judgePipeline.run<CommonJudgeStore>({
-        targetPath: store.targetPath,
-        tempDir: store.tempDir,
-      })
+      try {
+        const judgeRes = await judgePipeline.run<CommonJudgeStore>({
+          targetPath: store.targetPath,
+          tempDir: store.tempDir,
+        })
+      } catch (error) {
+        if (error instanceof JudgeRuntimeError) {
+          if (policy === 'fuse') {
+            console.log('fuse! result is', error.reason)
+            break
+          } else if (policy === 'all') {
+            continue
+          }
+        }
+      }
     }
 
     const temp_dir = store.tempDir
