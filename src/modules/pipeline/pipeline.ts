@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Fri May 31 2024                                              *
+ * Last Modified: Sun Jun 02 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -62,7 +62,7 @@ type PipelineTaskData<In = any, Out = any> = {
 type PipelineCtx = {
   tasks: PipelineTaskData[]
   pipeline: Pipeline
-  env: {
+  store: {
     [key: string]: any
   }
   get(name: string): PipelineTaskData | undefined
@@ -75,18 +75,20 @@ type NextTaskType<T extends AnyFunction[]> = T['length'] extends 0
     ? (args: Awaited<ReturnType<Last<T>>>) => any
     : never
 
+type PipelineStore = Record<string, any>
+
 class Pipeline<Ts extends AnyFunction[] = []> {
   // private _tasks: Ts = [] as unknown as Ts;
   private _ctx: PipelineCtx = {
     tasks: [],
     pipeline: this as unknown as Pipeline<[]>,
-    env: {},
+    store: {},
     get(name: string) {
       return this.tasks.find((task) => task.name === name)
     }
   }
 
-  private _final: AnyFunction | undefined
+  private _finally: AnyFunction | undefined
 
   private constructor() {}
 
@@ -110,7 +112,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
   }
 
   finally<T extends AnyFunction>(task: T): Pipeline<Ts> {
-    this._final = task
+    this._finally = task
     return this as unknown as Pipeline<Ts>
   }
 
@@ -124,22 +126,25 @@ class Pipeline<Ts extends AnyFunction[] = []> {
     return this._ctx
   }
 
-  setEnv(env: { [key: string]: any }) {
-    this._ctx.env = env
+  setStore(store: PipelineStore) {
+    this._ctx.store = store
   }
 
-  async run(...args: Parameters<Ts[0]>) {
+  async run<T extends PipelineStore = PipelineStore>(init_store: T) {
+    this.setStore(init_store)
+    console.log('store set to', init_store)
     try {
-      let result: any
+      let result: any = null
       for (const task of this._ctx.tasks) {
-        result = await task.task.run(result)
+        result = await task.task.run(result) // may take in context?
         task.result = result
+        console.log(`task ${task.name} done with result`, result)
       }
       return this._ctx
     } catch (e) {
       throw e
     } finally {
-      await this._final?.(this._ctx)
+      await this._finally?.(this._ctx)
     }
   }
 
@@ -163,15 +168,5 @@ class Pipeline<Ts extends AnyFunction[] = []> {
     })
   }
 }
-
-const p = Pipeline.create(({ pipe }) => {
-  return pipe(async (input: 'number') => {
-    return input + 1
-  }).pipe(async (aa) => {
-    return aa + 1
-  })
-})
-
-p.run('number')
 
 export { Task, Pipeline }

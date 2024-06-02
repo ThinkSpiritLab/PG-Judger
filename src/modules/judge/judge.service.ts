@@ -70,8 +70,6 @@ type JudgeRequest =
   | InteractiveJudgeRequest
 @Injectable()
 export class JudgeService {
-
-
   async judge(req: JudgeRequest) {
     switch (req.type) {
       case 'normal':

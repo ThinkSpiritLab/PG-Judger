@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 01 2024                                              *
+ * Last Modified: Sun Jun 02 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -36,13 +36,13 @@ export class CompareService {
   ) {
     this.ojcmpPath = this.configService.getOrThrow<string>('OJ_CMP_PATH')
 
-    this.test()
-      .then((res) => {
-        console.log('done', res)
-      })
-      .catch((e) => {
-        console.error(e)
-      })
+    // this.test()
+    //   .then((res) => {
+    //     console.log('done', res)
+    //   })
+    //   .catch((e) => {
+    //     console.error(e)
+    //   })
   }
 
   async test() {

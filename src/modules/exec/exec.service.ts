@@ -84,7 +84,7 @@ export class ExecService {
     )
 
     console.log(
-      `jailExec: ${jailExec} ${jailArgs.join(' ')}, stdio: ${stdio.join(' ')}`
+      `jailExec: ${jailExec} ${jailArgs.join(' ')}`
     )
 
     return new MeteredExecuable(
@@ -102,7 +102,7 @@ export class ExecService {
     args,
     timeout_ms,
     memory_kb,
-    stdio,
+    stdio = [],
     gid = 1999,
     uid = 1999,
     pidLimit = 2000,
@@ -124,14 +124,16 @@ export class ExecService {
     args: string[]
     timeout_ms: number
     memory_kb: number
-    stdio: CompleteStdioOptions
+    stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit'>) {
+
+    while (stdio.length < 3) stdio.push('ignore') 
     stdio.push('pipe') // append a pipe for meter
 
     const meter: MeterSpawnOption = {
       meterFd: stdio.length - 1, // append to the end, normally 3 or 4(if using hc and ojcmp, it is stdin stdout stderr userFd meterFd)
-      memoryLimit: memory_kb,
+      memoryLimit: memory_kb * 1024,
       timeLimit: timeout_ms,
       gid: 0,
       uid: 0,

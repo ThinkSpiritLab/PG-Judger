@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 01 2024                                              *
+ * Last Modified: Sun Jun 02 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -25,6 +25,22 @@ class Executable extends EventEmitter {
   private _args: string[]
   private childProcess: ChildProcess | null = null
   private _stdio: CompleteStdioOptions
+
+  public exit: Promise<number> = new Promise((resolve, reject) => {
+    this.on('close', (code: number) => {
+      resolve(code)
+    })
+
+    this.on('error', (err: Error) => {
+      console.error(err)
+      reject(-1)
+    })
+
+    this.on('exit', (code: number) => {
+      resolve(code)
+    })
+  })
+
 
   constructor({
     executablePath,
@@ -60,6 +76,10 @@ class Executable extends EventEmitter {
 
     this.childProcess.on('error', (err: Error) => {
       this.emit('error', err)
+    })
+
+    this.childProcess.on('exit', (code: number) => {
+      this.emit('exit', code)
     })
   }
 
