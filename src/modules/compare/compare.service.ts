@@ -28,6 +28,15 @@ type CompareMode = 'float' | 'normal' | 'strict'
 @Injectable()
 export class CompareService {
   ojcmpPath: string
+
+  limits: {
+    memory_kb: number
+    timeout_ms: number
+  } = {
+    memory_kb: 1024 * 256,
+    timeout_ms: 3000,
+  }
+
   constructor(
     private readonly configService: ConfigService,
     private readonly jailService: JailService,
@@ -36,13 +45,7 @@ export class CompareService {
   ) {
     this.ojcmpPath = this.configService.getOrThrow<string>('OJ_CMP_PATH')
 
-    // this.test()
-    //   .then((res) => {
-    //     console.log('done', res)
-    //   })
-    //   .catch((e) => {
-    //     console.error(e)
-    //   })
+    
   }
 
   async test() {
@@ -63,8 +66,8 @@ export class CompareService {
       cmp = await this.execService.runWithJailAndMeterFasade({
         command: this.ojcmpPath,
         args: [mode, '--user-fd', '0', '--std-fd', '3'],
-        memory_kb: 1024 * 1024 * 256,
-        timeout_ms: 100000,
+        memory_kb: this.limits.memory_kb,
+        timeout_ms: this.limits.timeout_ms,
         stdio: [aFH.fd, 'pipe', 'pipe', bFH.fd],
       })
 
@@ -75,10 +78,9 @@ export class CompareService {
         judgeResult
       ] = await Promise.all([cmp.measure, cmp.rdStdout()])
 
-      console.log('meter:', meter, 'judgeResult:', judgeResult)
 
       if (!meter || !judgeResult) {
-        throw new Error('Missing output from compare')
+        throw new Error('Missing output from ojcmp')
       }
 
       return judgeResult.trim() as 'AC' | 'WA' | "PE"

@@ -14,7 +14,7 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { CommonCompileStore, CommonCompileOption } from "../pipelines/g++";
+import { CommonCompileOption } from "../pipelines/g++";
 
 export const cpp = {
   lang: 'cpp',

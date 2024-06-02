@@ -105,8 +105,8 @@ export class ExecService {
     timeout_ms,
     memory_kb,
     stdio = [],
-    gid = 1999,
-    uid = 1999,
+    gid = 0,
+    uid = 0,
     pidLimit = 2000,
     // meterFd = 3,
     bindMount = [],
@@ -137,8 +137,8 @@ export class ExecService {
       meterFd: stdio.length - 1, // append to the end, normally 3 or 4(if using hc and ojcmp, it is stdin stdout stderr userFd meterFd)
       memoryLimit: memory_kb * 1024,
       timeLimit: timeout_ms,
-      gid: 0,
-      uid: 0,
+      gid,
+      uid,
       pidLimit
     }
 

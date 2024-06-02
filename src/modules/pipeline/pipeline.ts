@@ -14,7 +14,7 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { timed } from "@/utils/async"
+import { timed } from '@/utils/async'
 
 type TaskAction<In, Out> = (input: In) => PromiseLike<Out> | Out
 
@@ -32,25 +32,6 @@ class Task<In, Out> {
 
 type AnyFunction = (...args: any[]) => any | PromiseLike<any>
 
-type FirstAsTuple<T extends any[]> = T extends [any, ...infer R]
-  ? T extends [...infer F, ...R]
-    ? F
-    : never
-  : never
-
-type AggregateTasks<Acts extends AnyFunction[]> = Acts extends [infer First]
-  ? First extends (args: infer _) => infer __
-    ? First
-    : never
-  : Acts extends [infer First, ...infer Rest extends AnyFunction[]]
-    ? First extends (args: infer _) => infer __ // may add check between input and output
-      ? (
-          ...args: FirstAsTuple<Parameters<First>>
-        ) => Awaited<ReturnType<AggregateTasks<Rest>>>
-      : never
-    : never
-
-type TryGetReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : never
 type PipelineTaskData<In = any, Out = any> = {
   name: string
   desc: string
@@ -60,6 +41,7 @@ type PipelineTaskData<In = any, Out = any> = {
   }
   result: Out
 }
+
 type PipelineCtx<Store = {}> = {
   tasks: PipelineTaskData[]
   pipeline: Pipeline
@@ -79,7 +61,6 @@ type NextTaskType<T extends AnyFunction[]> = T['length'] extends 0
 type PipelineStore = Record<string, any>
 
 class Pipeline<Ts extends AnyFunction[] = []> {
-  // private _tasks: Ts = [] as unknown as Ts;
   private _ctx: PipelineCtx = {
     tasks: [],
     pipeline: this as unknown as Pipeline<[]>,
@@ -122,10 +103,6 @@ class Pipeline<Ts extends AnyFunction[] = []> {
     ) as unknown as Pipeline<Ts>['run']
   }
 
-  get ctx() {
-    return this._ctx
-  }
-
   setStore(store: PipelineStore) {
     this._ctx.store = store
   }
@@ -135,14 +112,13 @@ class Pipeline<Ts extends AnyFunction[] = []> {
     try {
       let result: any = null
       for (const task of this._ctx.tasks) {
-        
         const [output, time_ms] = await timed(() => task.task.run(result))
-        
+
         console.log(`Task ${task.name} finished  (+${time_ms}ms)`)
 
         task.result = result = output
       }
-      
+
       return this._ctx
     } catch (e) {
       throw e
@@ -169,6 +145,10 @@ class Pipeline<Ts extends AnyFunction[] = []> {
       pipeline,
       pipe: pipeline.pipe.bind(pipeline)
     })
+  }
+
+  get ctx() {
+    return this._ctx
   }
 }
 
