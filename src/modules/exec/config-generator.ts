@@ -7,7 +7,7 @@ import { JailSpawnOption } from '@/modules/jail/jail.legacy'
  * Created Date: Su Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -116,9 +116,9 @@ export function getConfig(
     uidMap: all.uidMap,
     gidMap: all.gidMap,
     rlimitCPU: all.rlimitCPU,
-    rlimitAS: all.rlimitAS,
-    rlimitFSIZE: all.rlimitFSIZE,
-    rlimitSTACK: all.rlimitSTACK,
+    rlimitAS_MB: all.rlimitAS,
+    rlimitFSIZE_MB: all.rlimitFSIZE,
+    rlimitSTACK_MB: all.rlimitSTACK,
     cwd: all.cwd,
     env: all.env,
     passFd: range(stdio.length + 1) //add meterFd

@@ -4,7 +4,7 @@
  * Created Date: Su Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -68,5 +68,12 @@ export class JudgeRuntimeError extends JudgeException {
   constructor(reason: JudgeErrorReason, message: string) {
     super(message)
     this.reason = reason
+  }
+}
+
+export class JudgeCompileError extends JudgeException {
+  reason: JudgeErrorReason
+  constructor(message: string) {
+    super(message)
   }
 }

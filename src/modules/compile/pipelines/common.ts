@@ -33,7 +33,7 @@ import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareResult, CompareService } from '../../compare/compare.service'
 import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
-import { JudgeRuntimeError } from '@/modules/judge/judge.exceptions'
+import { JudgeCompileError, JudgeRuntimeError } from '@/modules/judge/judge.exceptions'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -76,9 +76,9 @@ export type CommonJudgeStore = {
 export class CommonPipelineProvider {
   constructor(
     private readonly execService: ExecService,
-    private readonly legacyMeterService: MeterService,
-    private readonly legacyJailService: LegacyJailService,
-    private readonly configService: ConfigService,
+    // private readonly legacyMeterService: MeterService,
+    // private readonly legacyJailService: LegacyJailService,
+    // private readonly configService: ConfigService,
     private readonly compareService: CompareService
   ) {}
 
@@ -104,8 +104,8 @@ export class CommonPipelineProvider {
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
               args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
-              memory_kb: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
-              timeout_ms: option.meterOption.timeLimit || 2000,
+              memory_KB: option.meterOption.memoryLimit!*1024, //TODO remove magic numbers
+              timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: option.tempDir!, mode: 'rw' }],
               cwd: option.tempDir!
             })
@@ -119,10 +119,14 @@ export class CommonPipelineProvider {
 
             const [exit_code, measure] = await Promise.all([
               task.getExitAwaiter(),
-              task.measure
+              task.measure!
             ])
 
             console.log(`compile measure: ${JSON.stringify(measure)}`)
+
+            if(measure.returnCode !== 0){
+              throw new JudgeCompileError('compile failed')
+            }
 
             ctx.store.exit_code = exit_code
             ctx.store.measure = measure!
@@ -170,7 +174,7 @@ export class CommonPipelineProvider {
               const task = await this.execService.runWithJailAndMeterFasade({
                 command: ctx.store.targetPath!,
                 args: [],
-                memory_kb: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
+                memory_KB: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
                 timeout_ms: option.meterOption.timeLimit || 2000,
                 stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
                 cwd: ctx.store.tempDir,
@@ -215,9 +219,9 @@ export class CommonPipelineProvider {
             )
 
             if (result === 'presentation-error') {
-              throw new JudgeRuntimeError('presentation-error', 'PE')
+              throw new JudgeRuntimeError('presentation-error', 'presentation-error')
             } else if (result === 'wrong-answer') {
-              throw new JudgeRuntimeError('wrong-answer', 'WA')
+              throw new JudgeRuntimeError('wrong-answer', 'wrong-answer')
             }
 
             ctx.store.result = result

@@ -39,7 +39,7 @@ export class CompareService {
     memory_kb: number
     timeout_ms: number
   } = {
-    memory_kb: 1024 * 256,
+    memory_kb: 1024 * 1024,
     timeout_ms: 3000
   }
 
@@ -66,7 +66,7 @@ export class CompareService {
       cmp = await this.execService.runWithJailAndMeterFasade({
         command: this.ojcmpPath,
         args: [mode, '--user-fd', '0', '--std-fd', '3'],
-        memory_kb: this.limits.memory_kb,
+        memory_KB: this.limits.memory_kb,
         timeout_ms: this.limits.timeout_ms,
         stdio: [aFH.fd, 'pipe', 'pipe', bFH.fd]
       })

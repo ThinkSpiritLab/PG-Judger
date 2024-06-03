@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Legacy                                                              *
  * -----                                                                       *
- * Last Modified: Fri May 31 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -50,13 +50,13 @@ export interface JailSpawnOption {
   uidMap?: JailUGidMapOption[]
   gidMap?: JailUGidMapOption[]
 
-  timeLimit?: number // s default inf
+  timeLimit_s?: number // s default inf
 
   // rlimit
   rlimitCPU?: number | RlimitString // s default 600s
-  rlimitAS?: number | RlimitString // M default 4096MB
-  rlimitFSIZE?: number | RlimitString // M default 1MB
-  rlimitSTACK?: number | RlimitString // M default soft
+  rlimitAS_MB?: number | RlimitString // M default 4096MB
+  rlimitFSIZE_MB?: number | RlimitString // M default 1MB
+  rlimitSTACK_MB?: number | RlimitString // M default soft
 
   cwd?: string
   env?: { [key: string]: string }
@@ -131,8 +131,8 @@ export class LegacyJailService {
           })
         }
 
-        if (jailOption.timeLimit) {
-          jailArgs.push('-t', Math.ceil(jailOption.timeLimit).toString())
+        if (jailOption.timeLimit_s) {
+          jailArgs.push('-t', Math.ceil(jailOption.timeLimit_s).toString())
         }
 
         if (jailOption.rlimitCPU) {
@@ -146,36 +146,36 @@ export class LegacyJailService {
           }
         }
 
-        if (jailOption.rlimitAS) {
-          if (typeof jailOption.rlimitAS === 'number') {
+        if (jailOption.rlimitAS_MB) {
+          if (typeof jailOption.rlimitAS_MB === 'number') {
             jailArgs.push(
               '--rlimit_as',
-              Math.ceil(jailOption.rlimitAS).toString()
+              Math.ceil(jailOption.rlimitAS_MB).toString()
             )
           } else {
-            jailArgs.push('--rlimit_as', jailOption.rlimitAS)
+            jailArgs.push('--rlimit_as', jailOption.rlimitAS_MB)
           }
         }
 
-        if (jailOption.rlimitFSIZE) {
-          if (typeof jailOption.rlimitFSIZE === 'number') {
+        if (jailOption.rlimitFSIZE_MB) {
+          if (typeof jailOption.rlimitFSIZE_MB === 'number') {
             jailArgs.push(
               '--rlimit_fsize',
-              Math.ceil(jailOption.rlimitFSIZE).toString()
+              Math.ceil(jailOption.rlimitFSIZE_MB).toString()
             )
           } else {
-            jailArgs.push('--rlimit_fsize', jailOption.rlimitFSIZE)
+            jailArgs.push('--rlimit_fsize', jailOption.rlimitFSIZE_MB)
           }
         }
 
-        if (jailOption.rlimitSTACK) {
-          if (typeof jailOption.rlimitSTACK === 'number') {
+        if (jailOption.rlimitSTACK_MB) {
+          if (typeof jailOption.rlimitSTACK_MB === 'number') {
             jailArgs.push(
               '--rlimit_stack',
-              Math.ceil(jailOption.rlimitSTACK).toString()
+              Math.ceil(jailOption.rlimitSTACK_MB).toString()
             )
           } else {
-            jailArgs.push('--rlimit_stack', jailOption.rlimitSTACK)
+            jailArgs.push('--rlimit_stack', jailOption.rlimitSTACK_MB)
           }
         }
 

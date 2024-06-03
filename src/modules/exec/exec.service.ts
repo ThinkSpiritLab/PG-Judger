@@ -83,9 +83,9 @@ export class ExecService {
       meterArgs
     )
 
-    // console.log(
-    //   `jailExec: ${jailExec} ${jailArgs.join(' ')}`
-    // )
+    console.log(
+      `jailExec: ${jailExec} ${jailArgs.join(' ')}`
+    )
 
     // console.log(`stdio: ${stdio}, meterFd: ${meterOption.meterFd}`)
 
@@ -104,7 +104,7 @@ export class ExecService {
     command,
     args,
     timeout_ms,
-    memory_kb,
+    memory_KB,
     stdio = [],
     gid = 0,
     uid = 0,
@@ -116,17 +116,17 @@ export class ExecService {
     uidMap = [],
     gidMap = [],
     passFd = [], // we pass all, cannot be set
-    rlimitAS = 1024 * 1024,
+    rlimitAS_MB: rlimitAS = 1024 * 1024,
     rlimitCPU = 600,
-    rlimitFSIZE = 1024 * 1024,
-    rlimitSTACK = 'soft', 
+    rlimitFSIZE_MB: rlimitFSIZE_MB = 1024 * 1024,
+    rlimitSTACK_MB: rlimitSTACK_MB = 'soft', 
     symlink = [],
     tmpfsMount = []
   }: {
     command: string
     args: string[]
     timeout_ms: number
-    memory_kb: number
+    memory_KB: number
     stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit'>) {
@@ -136,7 +136,7 @@ export class ExecService {
 
     const meter: MeterSpawnOption = {
       meterFd: stdio.length - 1, // append to the end, normally 3 or 4(if using hc and ojcmp, it is stdin stdout stderr userFd meterFd)
-      memoryLimit: memory_kb * 1024,
+      memoryLimit: memory_KB,
       timeLimit: timeout_ms,
       gid,
       uid,
@@ -161,15 +161,15 @@ export class ExecService {
       gidMap,
       // passFd,
       passFd: range(stdio.length),
-      rlimitAS,
+      rlimitAS_MB: memory_KB / 1024,
       rlimitCPU,
-      rlimitFSIZE,
-      rlimitSTACK,
+      rlimitFSIZE_MB,
+      rlimitSTACK_MB,
       symlink,
       // timeout is not used here due to
       // low accuracy of nsjail's timeout
       // used as a backup in case program stuck
-      timeLimit: Math.ceil(timeout_ms / 1000) + 1,
+      timeLimit_s: Math.ceil(timeout_ms / 1000) + 1,
       tmpfsMount
     }
 

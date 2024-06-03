@@ -127,8 +127,8 @@ export class JailService {
       })
     }
 
-    if (cfg.timeLimit) {
-      jailArgs.push('-t', Math.ceil(cfg.timeLimit).toString())
+    if (cfg.timeLimit_s) {
+      jailArgs.push('-t', Math.ceil(cfg.timeLimit_s).toString())
     }
 
     if (cfg.rlimitCPU) {
@@ -139,27 +139,27 @@ export class JailService {
       }
     }
 
-    if (cfg.rlimitAS) {
-      if (typeof cfg.rlimitAS === 'number') {
-        jailArgs.push('--rlimit_as', Math.ceil(cfg.rlimitAS).toString())
+    if (cfg.rlimitAS_MB) {
+      if (typeof cfg.rlimitAS_MB === 'number') {
+        jailArgs.push('--rlimit_as', Math.ceil(cfg.rlimitAS_MB).toString())
       } else {
-        jailArgs.push('--rlimit_as', cfg.rlimitAS)
+        jailArgs.push('--rlimit_as', cfg.rlimitAS_MB)
       }
     }
 
-    if (cfg.rlimitFSIZE) {
-      if (typeof cfg.rlimitFSIZE === 'number') {
-        jailArgs.push('--rlimit_fsize', Math.ceil(cfg.rlimitFSIZE).toString())
+    if (cfg.rlimitFSIZE_MB) {
+      if (typeof cfg.rlimitFSIZE_MB === 'number') {
+        jailArgs.push('--rlimit_fsize', Math.ceil(cfg.rlimitFSIZE_MB).toString())
       } else {
-        jailArgs.push('--rlimit_fsize', cfg.rlimitFSIZE)
+        jailArgs.push('--rlimit_fsize', cfg.rlimitFSIZE_MB)
       }
     }
 
-    if (cfg.rlimitSTACK) {
-      if (typeof cfg.rlimitSTACK === 'number') {
-        jailArgs.push('--rlimit_stack', Math.ceil(cfg.rlimitSTACK).toString())
+    if (cfg.rlimitSTACK_MB) {
+      if (typeof cfg.rlimitSTACK_MB === 'number') {
+        jailArgs.push('--rlimit_stack', Math.ceil(cfg.rlimitSTACK_MB).toString())
       } else {
-        jailArgs.push('--rlimit_stack', cfg.rlimitSTACK)
+        jailArgs.push('--rlimit_stack', cfg.rlimitSTACK_MB)
       }
     }
 

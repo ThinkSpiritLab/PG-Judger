@@ -7,7 +7,7 @@ import {
   CommonJudgeStore
 } from '../compile/pipelines/common'
 import { rm } from 'fs/promises'
-import { JudgeRuntimeError } from './judge.exceptions'
+import { JudgeCompileError, JudgeRuntimeError } from './judge.exceptions'
 import { getConfig } from '../exec/config-generator'
 import { MeterResult } from '../meter/meter.service'
 
@@ -55,7 +55,7 @@ export type TestCase = {
 }
 export type TestPolicy = 'fuse' | 'all'
 
-type NormalJudgeRequest = BaseJudgeRequest & {
+export type NormalJudgeRequest = BaseJudgeRequest & {
   user: ExecutableInfo
   cases: TestCase[]
   policy: TestPolicy
@@ -162,80 +162,130 @@ export class JudgeService {
       case 'spj':
         return this.spjJudge(req)
       case 'interactive':
-        return this.interactiveJudge(req)
+        return this.interactiveJudge(req) 
     }
+
+    throw new Error('Unknown judge request type')
   }
 
   async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
-    const store = (await this.compileService.compile(user))
-      .store as CommonCompileStore
+    let store: CommonCompileStore | null = null
+    try {
+      store = (await this.compileService.compile(user))
+        .store as CommonCompileStore
 
-    const judgePipelineFactory = this.pipelineService.getPipeline(
-      'common-run-testcase'
-    )
+      const judgePipelineFactory = this.pipelineService.getPipeline(
+        'common-run-testcase'
+      )
 
-    const {
-      limit: { runtime }
-    } = user
-    const judgePipeline = judgePipelineFactory({
-      jailOption: {
-        timeLimit: runtime.cpuTime,
-        rlimitAS: runtime.memory * 1024 * 8, //FIXME is this right?
-        rlimitFSIZE: runtime.output * 1024 * 8 //FIXME is this right?
-      },
-      meterOption: {
-        memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
-        timeLimit: runtime.cpuTime,
-        pidLimit: 1
-      }
-    } satisfies CommonJudgeOption)
-
-    const testResult: {
-      measure?: MeterResult
-      result: string
-    }[] = [] as any
-    for (const testcase of cases) {
-      try {
-        const {
-          store: { user_measure, result }
-        } = await judgePipeline.run<CommonJudgeStore>({
-          targetPath: store.targetPath,
-          tempDir: store.tempDir,
-          case: testcase
-        })
-        testResult.push({ measure: user_measure!, result: result! })
-      } catch (error) {
-        if (error instanceof JudgeRuntimeError) {
-          testResult.push({ result: error.message })
-
-          if (policy === 'fuse') {
-            console.log('fuse! result is', error.reason)
-            break
-          } else if (policy === 'all') {
-            continue
-          }
+      const {
+        limit: { runtime }
+      } = user
+      const judgePipeline = judgePipelineFactory({
+        jailOption: {
+          timeLimit_s: runtime.cpuTime,
+          rlimitAS_MB: runtime.memory * 1024 * 8, //FIXME is this right?
+          rlimitFSIZE_MB: runtime.output * 1024 * 8 //FIXME is this right?
+        },
+        meterOption: {
+          memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
+          timeLimit: runtime.cpuTime,
+          pidLimit: 1
         }
-        //TODO ... if other known exceptions
-        testResult.push({ result: 'UNKNOWN' })
-        throw error
+      } satisfies CommonJudgeOption)
+
+      const testResult: {
+        measure?: MeterResult
+        result: string
+      }[] = [] as any
+      for (const testcase of cases) {
+        try {
+          const {
+            store: { user_measure, result }
+          } = await judgePipeline.run<CommonJudgeStore>({
+            targetPath: store.targetPath,
+            tempDir: store.tempDir,
+            case: testcase
+          })
+          testResult.push({ measure: user_measure!, result: result! })
+        } catch (error) {
+          if (error instanceof JudgeRuntimeError) {
+            testResult.push({ result: error.reason })
+
+            if (policy === 'fuse') {
+              console.log('fuse! result is', error.reason)
+              break
+            } else if (policy === 'all') {
+              continue
+            }
+          }
+
+          //TODO ... if other known exceptions
+          testResult.push({ result: 'UNKNOWN' })
+          throw error
+        }
       }
+      // if shorter than cases, then it's a fuse
+      // append the result with 'UNJUDGED'
+      testResult.push(
+        ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
+      )
+      console.log(testResult)
+      //TODO
+      // we also do summary here
+      // if all test cases are AC, then return AC
+      // if any compile time error, show compile error
+      // then if any runtime error, show runtime error
+
+      return testResult
+    } catch (error) {
+      if (error instanceof JudgeCompileError) {
+        console.log('compile error', error.message)
+
+        // return results filled with compile error
+        return cases.map(() => ({ result: 'CE' }))
+      }
+      throw error //FIXME check this
+      //TODO ... if other known exceptions
+    } finally {
+      // clean up
+      store && rm(store.tempDir, { recursive: true })
     }
-    // if shorter than cases, then it's a fuse
-    // append the result with 'UNJUDGED'
-    testResult.push(
-      ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
-    )
-    console.log(testResult)
-    const temp_dir = store.tempDir
-    // clean up
-    rm(temp_dir, { recursive: true })
   }
 
   async spjJudge(req: SpjJudgeRequest) {
     // TODO
+    throw new Error('Not implemented')
+    return null
   }
 
   async interactiveJudge(req: InteractiveJudgeRequest) {
     // TODO
+    throw new Error('Not implemented')
+    return null
+  }
+
+  summaryResult(
+    results: {
+      measure?: MeterResult
+      result: string
+    }[],
+    policy: TestPolicy
+  ) {
+    if (!results) {
+      return 'UNKNOWN'
+    }
+
+    if (policy === 'fuse') {
+      if (results.some((r) => r.result === 'AC')) {
+        return 'AC'
+      }
+    } else if (policy === 'all') {
+      if (results.every((r) => r.result === 'AC')) {
+        return 'AC'
+      }
+    }
+    // return first non-AC result
+    return results.find((r) => r.result !== 'AC')?.result || 'UNKNOWN'
   }
 }
