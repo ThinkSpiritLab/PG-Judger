@@ -174,11 +174,20 @@ export class JudgeService {
       'common-run-testcase'
     )
 
-    getConfig
-
+    const {
+      limit: { runtime }
+    } = user
     const judgePipeline = judgePipelineFactory({
-      jailOption: {},
-      meterOption: {}
+      jailOption: {
+        timeLimit: runtime.cpuTime,
+        rlimitAS: runtime.memory * 1024 * 8, //FIXME is this right?
+        rlimitFSIZE: runtime.output * 1024 * 8 //FIXME is this right?
+      },
+      meterOption: {
+        memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
+        timeLimit: runtime.cpuTime,
+        pidLimit: 1
+      }
     } satisfies CommonJudgeOption)
 
     const testResult: {
@@ -195,7 +204,6 @@ export class JudgeService {
           case: testcase
         })
         testResult.push({ measure: user_measure!, result: result! })
-
       } catch (error) {
         if (error instanceof JudgeRuntimeError) {
           testResult.push({ result: error.message })
@@ -211,7 +219,6 @@ export class JudgeService {
         testResult.push({ result: 'UNKNOWN' })
         throw error
       }
-
     }
     // if shorter than cases, then it's a fuse
     // append the result with 'UNJUDGED'
