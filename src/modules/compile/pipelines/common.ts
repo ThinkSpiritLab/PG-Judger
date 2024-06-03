@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -31,7 +31,7 @@ import { JailSpawnOption, LegacyJailService } from '../../jail/jail.legacy'
 import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
-import { CompareService } from '../../compare/compare.service'
+import { CompareResult, CompareService } from '../../compare/compare.service'
 import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
 import { JudgeRuntimeError } from '@/modules/judge/judge.exceptions'
 
@@ -58,14 +58,16 @@ export type CommonCompileStore = {
 export type CommonJudgeOption = {
   jailOption: JailSpawnOption //TODO remove legacy option
   meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
-
-  case: TestCase
 }
 
 export type CommonJudgeStore = {
   targetPath: string
   tempDir: string
+  case: TestCase
+  
+  // set in runtime
   user_exit_code?: number
+  result?: CompareResult
   user_measure?: MeterResult
 }
 
@@ -133,8 +135,8 @@ export class CommonPipelineProvider {
     })
   }
 
-  @RegisterPipeline('common-run-testcase')
   // note that this only test a single testcase
+  @RegisterPipeline('common-run-testcase')
   commonJudgePipelineFactory(option: CommonJudgeOption) {
     return Pipeline.create<CommonJudgeStore>(({ pipe, ctx }) => {
       return pipe(
@@ -148,8 +150,8 @@ export class CommonPipelineProvider {
           const userOutputPath = join(ctx.store.tempDir, 'user-output')
 
           await Promise.all([
-            writeFile(caseInputPath, option.case.input),
-            writeFile(caseOutputPath, option.case.output),
+            writeFile(caseInputPath, ctx.store.case.input),
+            writeFile(caseOutputPath, ctx.store.case.output),
             writeFile(userOutputPath, '')
           ])
 
@@ -193,8 +195,8 @@ export class CommonPipelineProvider {
               ctx.store.user_exit_code = measure.returnCode
               ctx.store.user_measure = measure
 
-              console.log(`user_exit_code: ${measure?.returnCode}`)
-              console.log(`user_measure: ${JSON.stringify(measure)}`)
+              // console.log(`user_exit_code: ${measure?.returnCode}`)
+              // console.log(`user_measure: ${JSON.stringify(measure)}`)
             } catch (error) {
               throw error
             } finally {
@@ -206,15 +208,19 @@ export class CommonPipelineProvider {
         )
         .pipe(
           async ({ caseOutputPath, userOutputPath }) => {
-            const result = await this.compareService.compare(caseOutputPath, userOutputPath, 'normal')
+            const result = await this.compareService.compare(
+              caseOutputPath,
+              userOutputPath,
+              'normal'
+            )
 
-            if (result === 'PE') {
-              throw new JudgeRuntimeError("presentation-error", "PE")
-            } else if (result === 'WA') {
-              throw new JudgeRuntimeError("wrong-answer", "WA")
+            if (result === 'presentation-error') {
+              throw new JudgeRuntimeError('presentation-error', 'PE')
+            } else if (result === 'wrong-answer') {
+              throw new JudgeRuntimeError('wrong-answer', 'WA')
             }
 
-            console.log(`compare result: ${result}`)
+            ctx.store.result = result
           },
           { name: 'compare' }
         )

@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -22,9 +22,15 @@ import { LegacyJailService } from '../jail/jail.legacy'
 import Executable, { MeteredExecuable } from '../exec/executable'
 import { ExecService } from '../exec/exec.service'
 import { range } from 'lodash'
+import { RuntimeError } from '../pipeline/pipeline.exception'
 
 type CompareMode = 'float' | 'normal' | 'strict'
-
+export type CompareResult = typeof compareResultMap[keyof typeof compareResultMap]
+const compareResultMap = {
+  AC: 'accepted',
+  WA: 'wrong-answer',
+  PE: 'presentation-error'
+} as const
 @Injectable()
 export class CompareService {
   ojcmpPath: string
@@ -73,12 +79,12 @@ export class CompareService {
       ])
 
       if (!meter || !judgeResult) {
-        throw new Error('Missing output from ojcmp')
+        throw new RuntimeError('Missing output from ojcmp')
       }
 
-      console.log(`compare measure: ${JSON.stringify(meter)}`)
+      // console.log(`compare measure: ${JSON.stringify(meter)}`)
 
-      return judgeResult.trim() as 'AC' | 'WA' | 'PE'
+      return compareResultMap[judgeResult.trim() as 'AC' | 'WA' | 'PE'] 
     } catch (error) {
       throw error
     } finally {

@@ -8,6 +8,8 @@ import {
 } from '../compile/pipelines/common'
 import { rm } from 'fs/promises'
 import { JudgeRuntimeError } from './judge.exceptions'
+import { getConfig } from '../exec/config-generator'
+import { MeterResult } from '../meter/meter.service'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -84,112 +86,73 @@ export class JudgeService {
     private readonly pipelineService: PipelineService
   ) {
     setTimeout(() => {
-      this.test()
-    }, 600)
-  }
-
-  async test() {
-    const execInfo: ExecutableInfo = {
-      src: {
-        type: 'plain-text',
-        content: `
-        #include <iostream>
-        using namespace std;
-        int main() {
-          int a, b;
-          cin >> a >> b;
-          cout << a + b << endl;
-          return 0;
-        }
-        `
-        // content: `
-        // int main() {
-        //   return 1;
-        // }
-        // `
-      },
-      env: {
-        lang: 'cpp',
-        arch: 'x64',
-        options: {},
-        system: 'linux'
-      },
-      limit: {
-        compiler: {
-          cpuTime: 1000,
-          memory: 1024,
-          message: 1024,
-          output: 1024
-        },
-        runtime: {
-          cpuTime: 1000,
-          memory: 1024,
-          output: 1024
-        }
-      }
-    }
-    const policy: TestPolicy = 'fuse'
-    const compileRes = await this.compileService.compile(execInfo)
-    const store = compileRes.store as CommonCompileStore
-    // console.log('compile phase done', store)
-
-    const judgePipelineFactory = this.pipelineService.getPipeline(
-      'common-run-testcase'
-    )
-
-    const testcases = [
-      {
-        input: '1 1\n',
-        output: '2\n'
-      },
-      {
-        input: '2 2\n',
-        output: '114514\n'
-      },
-      {
-        input: '3 3\n',
-        output: '6\n'
-      },
-      {
-        input: '4 4\n',
-        output: '8\n'
-      },
-      {
-        input: '5 5\n',
-        output: '10\n'
-      }
-    ]
-
-    for(const testcase of testcases) {
-      const judgePipeline = judgePipelineFactory({
-        case: testcase,
-        jailOption: {
-          uidMap: [{inside: 0, outside: 0, count: 1}],
-          gidMap: [{inside: 0, outside: 0, count: 1}],
-        },
-        meterOption: {},
-      } satisfies CommonJudgeOption)
-  
-      try {
-        const judgeRes = await judgePipeline.run<CommonJudgeStore>({
-          targetPath: store.targetPath,
-          tempDir: store.tempDir,
-        })
-      } catch (error) {
-        if (error instanceof JudgeRuntimeError) {
-          if (policy === 'fuse') {
-            console.log('fuse! result is', error.reason)
-            break
-          } else if (policy === 'all') {
-            continue
+      this.normalJudge({
+        id: '1',
+        cases: [
+          {
+            input: '1 1\n',
+            output: '2\n'
+          },
+          {
+            input: '2 2\n',
+            output: '114514\n'
+          },
+          {
+            input: '3 3\n',
+            output: '6\n'
+          },
+          {
+            input: '4 4\n',
+            output: '8\n'
+          },
+          {
+            input: '5 5\n',
+            output: '10\n'
+          }
+        ],
+        policy: 'all',
+        type: 'normal',
+        user: {
+          src: {
+            type: 'plain-text',
+            content: `
+            #include <iostream>
+            using namespace std;
+            int main() {
+              int a, b;
+              cin >> a >> b;
+              cout << a + b << endl;
+              return 0;
+            }
+            `
+            // content: `
+            // int main() {
+            //   return 1;
+            // }
+            // `
+          },
+          env: {
+            lang: 'cpp',
+            arch: 'x64',
+            options: {},
+            system: 'linux'
+          },
+          limit: {
+            compiler: {
+              cpuTime: 1000,
+              memory: 1024,
+              message: 1024,
+              output: 1024
+            },
+            runtime: {
+              cpuTime: 1000,
+              memory: 1024,
+              output: 1024
+            }
           }
         }
-      }
-    }
-
-    const temp_dir = store.tempDir
-    // clean up
-    rm(temp_dir, {recursive: true})
+      })
+    }, 600)
   }
 
   async judge(req: JudgeRequest) {
@@ -203,33 +166,62 @@ export class JudgeService {
     }
   }
 
-  async normalJudge(req: NormalJudgeRequest) {
-    const compileRes = await this.compileService.compile(req.user)
-    const store = compileRes.store as CommonCompileStore
+  async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
+    const store = (await this.compileService.compile(user))
+      .store as CommonCompileStore
 
     const judgePipelineFactory = this.pipelineService.getPipeline(
       'common-run-testcase'
     )
 
-    for (const testcase of req.cases) {
-      const judgePipeline = judgePipelineFactory({
-        case: testcase,
-        jailOption: {
-          uidMap: [{inside: 0, outside: 0, count: 1}],
-          gidMap: [{inside: 0, outside: 0, count: 1}],
-        },
-        meterOption: {},
-      } satisfies CommonJudgeOption)
+    getConfig
 
-      const judgeRes = await judgePipeline.run<CommonJudgeStore>({
-        targetPath: store.targetPath,
-        tempDir: store.tempDir,
-      })
+    const judgePipeline = judgePipelineFactory({
+      jailOption: {},
+      meterOption: {}
+    } satisfies CommonJudgeOption)
+
+    const testResult: {
+      measure?: MeterResult
+      result: string
+    }[] = [] as any
+    for (const testcase of cases) {
+      try {
+        const {
+          store: { user_measure, result }
+        } = await judgePipeline.run<CommonJudgeStore>({
+          targetPath: store.targetPath,
+          tempDir: store.tempDir,
+          case: testcase
+        })
+        testResult.push({ measure: user_measure!, result: result! })
+
+      } catch (error) {
+        if (error instanceof JudgeRuntimeError) {
+          testResult.push({ result: error.message })
+
+          if (policy === 'fuse') {
+            console.log('fuse! result is', error.reason)
+            break
+          } else if (policy === 'all') {
+            continue
+          }
+        }
+        //TODO ... if other known exceptions
+        testResult.push({ result: 'UNKNOWN' })
+        throw error
+      }
+
     }
-
+    // if shorter than cases, then it's a fuse
+    // append the result with 'UNJUDGED'
+    testResult.push(
+      ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
+    )
+    console.log(testResult)
     const temp_dir = store.tempDir
     // clean up
-    rm(temp_dir, {recursive: true})
+    rm(temp_dir, { recursive: true })
   }
 
   async spjJudge(req: SpjJudgeRequest) {

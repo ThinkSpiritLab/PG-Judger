@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Mon Jun 03 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -60,6 +60,14 @@ type NextTaskType<T extends AnyFunction[]> = T['length'] extends 0
 
 type PipelineStore = Record<string, any>
 
+
+/**
+ * Pipeline class
+ * 
+ * How you design a pipeline?
+ * - Pipeline shall have no side effect (or at least not to have side effect after running), so that pipeline can able to be reused
+ * - in case you cannot prevent side effect, if you want to create files, make sure you clean them up after running
+ */
 class Pipeline<Ts extends AnyFunction[] = []> {
   private _ctx: PipelineCtx<any> = {
     tasks: [],
@@ -124,7 +132,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
         task.result = result = output
       }
 
-      return this._ctx
+      return this._ctx as PipelineCtx<T>
     } catch (e) {
       this._ctx.store.error = e
       await this._catch?.(this._ctx)
