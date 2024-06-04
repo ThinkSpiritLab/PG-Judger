@@ -5,6 +5,10 @@ type PipelineFactory = (...args: any[]) => Pipeline<any>
 
 @Injectable()
 export class PipelineService {
+  constructor() {
+    console.log('PipelineService created')
+  }
+
   private pipelineFactoryMap: Map<string, PipelineFactory> =
     new Map()
 

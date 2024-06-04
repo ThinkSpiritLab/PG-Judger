@@ -1,18 +1,46 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { JudgeService } from './judge.service'
-import { JudgeTest, tests as langsTests } from './test'
-import { toNormalJudgeRequest } from './test/index'
-import { ConfigService } from '@nestjs/config'
+import { tests as langsTests } from './test'
+import { JudgeTest, toNormalJudgeRequest } from './test/utils'
+import { ConfigModule } from '@nestjs/config'
+import { CompileModule } from '../compile/compile.module'
+import { PipelineModule } from '../pipeline/pipeline.module'
+import { CommonModule } from '../common/common.module'
+import { CommonPipelineProvider } from '../compile/pipelines/common'
+import { ExecModule } from '../exec/exec.module'
+import { CompareModule } from '../compare/compare.module'
+import { PipelineRegistryService } from '../pipeline/pipeline.decorator'
+import { DiscoveryService, MetadataScanner } from '@nestjs/core'
+import { PipelineService } from '../pipeline/pipeline.service'
 
 describe('JudgeService', () => {
   let service: JudgeService
+  let pipelineService: PipelineService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [JudgeService, ConfigService]
+      imports: [
+        CompileModule,
+        PipelineModule,
+        CommonModule,
+        ExecModule,
+        CompareModule
+      ],
+      providers: [
+        JudgeService,
+        // CommonPipelineProvider,
+        PipelineRegistryService,
+        DiscoveryService,
+        MetadataScanner
+      ]
     }).compile()
 
     service = module.get<JudgeService>(JudgeService)
+
+    pipelineService = module.get<PipelineService>(PipelineService)
+    const provider = module.get<CommonPipelineProvider>(CommonPipelineProvider)
+    pipelineService.register('common-compile', provider.commonCompilePipelineFactory.bind(provider))
+    pipelineService.register('common-run-testcase', provider.commonJudgePipelineFactory.bind(provider))
   })
 
   it('should be defined', () => {
@@ -24,10 +52,12 @@ describe('JudgeService', () => {
     describe(`language ${key}`, () => {
       tests.forEach((t: JudgeTest) => {
         it(t.name, async () => {
-          const res = await service.judge(toNormalJudgeRequest(t))
+          const req = toNormalJudgeRequest(t)
+          const res = await service.judge(req)
           expect(res).toBeDefined()
-          expect(service.summaryResult(res!, 'all')).toEqual(t.expectResult)
-        })
+          const summary = service.summaryResult(res!, 'all')
+          expect(summary).toEqual(t.expectResult)
+        }, 5000)
       })
     })
   })

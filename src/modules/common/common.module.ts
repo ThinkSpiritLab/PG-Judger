@@ -1,7 +1,7 @@
 /*
- * File: ac.ts                                                                 *
+ * File: common.module.ts                                                      *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: Tu Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Tue Jun 04 2024                                              *
@@ -14,30 +14,23 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { toNormalJudgeRequest } from '../utils'
+import { validate } from '@/misc/env.validation'
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 
-const input = `1 2
-`
-const output = `3
-`
-const usrCode = `
-#include <bits/stdc++.h>
-using namespace std;
+const env_file_path =
+  process.env.NODE_ENV === 'production'
+    ? ['.env.production', '.env']
+    : ['.env.development', '.env']
 
-int main(void) {
-    int a, b;
-    cin >> a >> b;
-    cout << a + b << endl;
-    return 0;
-}
-`
-
-const expectResult = 'accepted'
-
-export default ({
-  name: "cpp-AC",
-  usrCode,
-  input,
-  output,
-  expectResult
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: env_file_path,
+      isGlobal: true,
+      validate, // schema see /src/misc/env.validation.ts
+      cache: true
+    })
+  ]
 })
+export class CommonModule {}

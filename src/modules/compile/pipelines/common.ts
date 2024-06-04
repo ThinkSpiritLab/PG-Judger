@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 03 2024                                              *
+ * Last Modified: Tue Jun 04 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -33,7 +33,10 @@ import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareResult, CompareService } from '../../compare/compare.service'
 import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
-import { JudgeCompileError, JudgeRuntimeError } from '@/modules/judge/judge.exceptions'
+import {
+  JudgeCompileError,
+  JudgeRuntimeError
+} from '@/modules/judge/judge.exceptions'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -64,7 +67,7 @@ export type CommonJudgeStore = {
   targetPath: string
   tempDir: string
   case: TestCase
-  
+
   // set in runtime
   user_exit_code?: number
   result?: CompareResult
@@ -104,7 +107,7 @@ export class CommonPipelineProvider {
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
               args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
-              memory_KB: option.meterOption.memoryLimit!*1024, //TODO remove magic numbers
+              memory_KB: option.meterOption.memoryLimit! * 1024, //TODO remove magic numbers
               timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: option.tempDir!, mode: 'rw' }],
               cwd: option.tempDir!
@@ -124,7 +127,7 @@ export class CommonPipelineProvider {
 
             console.log(`compile measure: ${JSON.stringify(measure)}`)
 
-            if(measure.returnCode !== 0){
+            if (measure.returnCode !== 0) {
               throw new JudgeCompileError('compile failed')
             }
 
@@ -135,7 +138,11 @@ export class CommonPipelineProvider {
           },
           { name: 'compile-jailed' }
         )
-        .catch(T.unlink(option.tempDir!))
+        .catch(async () => {
+          if (ctx.store.tempDir) {
+            await rm(ctx.store.tempDir, { recursive: true })
+          }
+        })
     })
   }
 
@@ -219,7 +226,10 @@ export class CommonPipelineProvider {
             )
 
             if (result === 'presentation-error') {
-              throw new JudgeRuntimeError('presentation-error', 'presentation-error')
+              throw new JudgeRuntimeError(
+                'presentation-error',
+                'presentation-error'
+              )
             } else if (result === 'wrong-answer') {
               throw new JudgeRuntimeError('wrong-answer', 'wrong-answer')
             }

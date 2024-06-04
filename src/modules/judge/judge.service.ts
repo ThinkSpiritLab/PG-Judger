@@ -85,74 +85,74 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    setTimeout(() => {
-      this.normalJudge({
-        id: '1',
-        cases: [
-          {
-            input: '1 1\n',
-            output: '2\n'
-          },
-          {
-            input: '2 2\n',
-            output: '114514\n'
-          },
-          {
-            input: '3 3\n',
-            output: '6\n'
-          },
-          {
-            input: '4 4\n',
-            output: '8\n'
-          },
-          {
-            input: '5 5\n',
-            output: '10\n'
-          }
-        ],
-        policy: 'all',
-        type: 'normal',
-        user: {
-          src: {
-            type: 'plain-text',
-            content: `
-            #include <iostream>
-            using namespace std;
-            int main() {
-              int a, b;
-              cin >> a >> b;
-              cout << a + b << endl;
-              return 0;
-            }
-            `
-            // content: `
-            // int main() {
-            //   return 1;
-            // }
-            // `
-          },
-          env: {
-            lang: 'cpp',
-            arch: 'x64',
-            options: {},
-            system: 'linux'
-          },
-          limit: {
-            compiler: {
-              cpuTime: 1000,
-              memory: 1024,
-              message: 1024,
-              output: 1024
-            },
-            runtime: {
-              cpuTime: 1000,
-              memory: 1024,
-              output: 1024
-            }
-          }
-        }
-      })
-    }, 600)
+    // setTimeout(() => {
+    //   this.normalJudge({
+    //     id: '1',
+    //     cases: [
+    //       {
+    //         input: '1 1\n',
+    //         output: '2\n'
+    //       },
+    //       {
+    //         input: '2 2\n',
+    //         output: '114514\n'
+    //       },
+    //       {
+    //         input: '3 3\n',
+    //         output: '6\n'
+    //       },
+    //       {
+    //         input: '4 4\n',
+    //         output: '8\n'
+    //       },
+    //       {
+    //         input: '5 5\n',
+    //         output: '10\n'
+    //       }
+    //     ],
+    //     policy: 'all',
+    //     type: 'normal',
+    //     user: {
+    //       src: {
+    //         type: 'plain-text',
+    //         content: `
+    //         #include <iostream>
+    //         using namespace std;
+    //         int main() {
+    //           int a, b;
+    //           cin >> a >> b;
+    //           cout << a + b << endl;
+    //           return 0;
+    //         }
+    //         `
+    //         // content: `
+    //         // int main() {
+    //         //   return 1;
+    //         // }
+    //         // `
+    //       },
+    //       env: {
+    //         lang: 'cpp',
+    //         arch: 'x64',
+    //         options: {},
+    //         system: 'linux'
+    //       },
+    //       limit: {
+    //         compiler: {
+    //           cpuTime: 1000,
+    //           memory: 1024,
+    //           message: 1024,
+    //           output: 1024
+    //         },
+    //         runtime: {
+    //           cpuTime: 1000,
+    //           memory: 1024,
+    //           output: 1024
+    //         }
+    //       }
+    //     }
+    //   })
+    // }, 600)
   }
 
   async judge(req: JudgeRequest) {
@@ -240,10 +240,9 @@ export class JudgeService {
       return testResult
     } catch (error) {
       if (error instanceof JudgeCompileError) {
-        console.log('compile error', error.message)
-
+        // console.log('compile error', error.message)
         // return results filled with compile error
-        return cases.map(() => ({ result: 'CE' }))
+        return cases.map(() => ({ result: 'compile-error' }))
       }
       throw error //FIXME check this
       //TODO ... if other known exceptions
@@ -277,15 +276,15 @@ export class JudgeService {
     }
 
     if (policy === 'fuse') {
-      if (results.some((r) => r.result === 'AC')) {
-        return 'AC'
+      if (results.some((r) => r.result === 'accepted')) {
+        return 'accepted'
       }
     } else if (policy === 'all') {
-      if (results.every((r) => r.result === 'AC')) {
-        return 'AC'
+      if (results.every((r) => r.result === 'accepted')) {
+        return 'accepted'
       }
     }
     // return first non-AC result
-    return results.find((r) => r.result !== 'AC')?.result || 'UNKNOWN'
+    return results.find((r) => r.result !== 'accepted')?.result || 'UNKNOWN'
   }
 }

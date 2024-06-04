@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 03 2024                                              *
+ * Last Modified: Tue Jun 04 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -135,6 +135,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
       return this._ctx as PipelineCtx<T>
     } catch (e) {
       this._ctx.store.error = e
+      // console.error(e)
       await this._catch?.(this._ctx)
       throw e
     } finally {
