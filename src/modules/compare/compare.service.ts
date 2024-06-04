@@ -79,7 +79,7 @@ export class CompareService {
       ])
 
       if (!meter || !judgeResult) {
-        throw new PipelineRuntimeError('Missing output from ojcmp')
+        throw new PipelineRuntimeError('Missing output from ojcmp', 'internal-error')
       }
 
       // console.log(`compare measure: ${JSON.stringify(meter)}`)

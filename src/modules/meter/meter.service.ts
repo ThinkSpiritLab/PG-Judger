@@ -214,10 +214,7 @@ export function testMeterOrThrow(
   } else if (compileResult.memory >= limit.memory) {
     throw new MemoryLimitExceededError('Memory limit exceeded')
   } else if (compileResult.signal !== -1 || compileResult.returnCode !== 0) {
-    throw new PipelineRuntimeError('Runtime error', {
-      signal: compileResult.signal,
-      returnCode: compileResult.returnCode
-    })
+    throw new PipelineRuntimeError('Runtime error', 'runtime-error', compileResult)
   }
 }
 

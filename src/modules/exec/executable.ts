@@ -162,11 +162,11 @@ class MeteredExecuable extends Executable {
 
     this.measure = new Promise((resolve, reject) => {
       if (!this.process) {
-        reject(new PipelineRuntimeError('Process not started.'))
+        reject(new PipelineRuntimeError('Process not started.', 'internal-error'))
         return
       }
       this.process.on('error', (err) => {
-        reject(new PipelineRuntimeError(err.message))
+        reject(new PipelineRuntimeError(err.message, 'internal-error'))
       })
       let resultStr = ''
       const resultStream: Readable = this.process.stdio[
@@ -174,7 +174,7 @@ class MeteredExecuable extends Executable {
       ] as Readable
       resultStream.setEncoding('utf-8')
       resultStream.on('error', (err) => {
-        reject(new PipelineRuntimeError('measure failed'))
+        reject(new PipelineRuntimeError('measure failed', 'internal-error'))
       })
       resultStream.on('data', (chunk) => (resultStr += chunk))
       resultStream.on('end', () => {

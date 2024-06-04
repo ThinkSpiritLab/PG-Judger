@@ -196,7 +196,7 @@ export class CommonPipelineProvider {
               ])
 
               if (!measure) {
-                throw new PipelineRuntimeError('measure failed')
+                throw new PipelineRuntimeError('measure failed', 'internal-error')
               }
 
               if (measure.returnCode !== 0) {
