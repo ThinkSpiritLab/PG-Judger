@@ -7,10 +7,21 @@ import {
   CommonJudgeStore
 } from '../compile/pipelines/common'
 import { rm } from 'fs/promises'
-import { JudgeCompileError, JudgeRuntimeError } from './judge.exceptions'
+import {
+  JudgeCompileError,
+  JudgeRuntimeError as JudgeRuntimeException
+} from './judge.exceptions'
 import { getConfig } from '../exec/config-generator'
 import { MeterResult, testMeterOrThrow } from '../meter/meter.service'
-import { LimitViolationError, MemoryLimitExceededError, MeterException, OutputLimitExceededError, PipelineRuntimeError, TimeLimitExceededError } from '../pipeline/pipeline.exception'
+import {
+  LimitViolationError,
+  MemoryLimitExceededError,
+  MeterException,
+  OutputLimitExceededError,
+  PipelineRuntimeError,
+  TimeLimitExceededError
+} from '../pipeline/pipeline.exception'
+import { Pipeline } from '../pipeline/pipeline'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -163,7 +174,7 @@ export class JudgeService {
       case 'spj':
         return this.spjJudge(req)
       case 'interactive':
-        return this.interactiveJudge(req) 
+        return this.interactiveJudge(req)
     }
 
     throw new Error('Unknown judge request type')
@@ -182,18 +193,10 @@ export class JudgeService {
       const {
         limit: { runtime }
       } = user
-      const judgePipeline = judgePipelineFactory({
-        jailOption: {
-          timeLimit_s: runtime.cpuTime,
-          rlimitAS_MB: runtime.memory * 1024 * 8, //FIXME is this right?
-          rlimitFSIZE_MB: runtime.output * 1024 * 8 //FIXME is this right?
-        },
-        meterOption: {
-          memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
-          timeLimit: runtime.cpuTime,
-          pidLimit: 1
-        }
-      } satisfies CommonJudgeOption)
+      const judgePipeline = configureJudgePipeline(
+        judgePipelineFactory,
+        user.limit.runtime
+      )
 
       const testResult: {
         measure?: MeterResult
@@ -201,45 +204,16 @@ export class JudgeService {
       }[] = [] as any
       for (const testcase of cases) {
         try {
-          const {
-            store: { user_measure, result }
-          } = await judgePipeline.run<CommonJudgeStore>({
-            targetPath: store.targetPath,
-            tempDir: store.tempDir,
-            case: testcase
-          })
-          testResult.push({ measure: user_measure!, result: result! })
+          await runJudgerPipeline(judgePipeline, store, testcase, testResult)
         } catch (error) {
-          if (error instanceof JudgeRuntimeError) {
-            testResult.push({ result: error.reason })
+          if (error instanceof JudgeRuntimeException) {
+            // WA, PE, RE
+            handleJudgeException(testResult, error)
           } else if (error instanceof LimitViolationError) {
-            console.warn('Limit violation error', error)
-            const limit = error.meter!
-            try {
-              testMeterOrThrow(limit, {
-                cpuTime: runtime.cpuTime,
-                memory: runtime.memory * 1024 * 8
-              })
-            } catch (error) {
-                if (error instanceof MeterException) {
-                  testResult.push({ result: error.reason })
-                }
-
-              // if (error instanceof TimeLimitExceededError) {
-              //   testResult.push({ result: 'time-limit-exceeded' })
-              // } else if (error instanceof MemoryLimitExceededError) {
-              //   testResult.push({ result: 'memory-limit-exceeded' })
-              // } else if (error instanceof OutputLimitExceededError) {
-              //   testResult.push({ result: 'output-limit-exceeded' })
-              // } else if (error instanceof PipelineRuntimeError) {
-              //   testResult.push({ result: 'runtime-error' })
-              // } else {
-              //   testResult.push({ result: 'UNKNOWN' })
-              //   console.error('Unknown limit violation error', error)
-              // }
-            }
+            // TLE, MLE, OLE
+            handleLimitError(error, runtime, testResult)
           } else {
-            testResult.push({ result: 'UNKNOWN' })
+            handleUnknownError(testResult)
           }
 
           if (policy === 'fuse') {
@@ -312,5 +286,72 @@ export class JudgeService {
     }
     // return first non-AC result
     return results.find((r) => r.result !== 'accepted')?.result || 'UNKNOWN'
+  }
+}
+
+function configureJudgePipeline(
+  judgePipelineFactory: (...args: any[]) => Pipeline<any>,
+  runtime: { memory: number; cpuTime: number; output: number }
+) {
+  return judgePipelineFactory({
+    jailOption: {
+      timeLimit_s: runtime.cpuTime,
+      rlimitAS_MB: runtime.memory * 1024 * 8, //FIXME is this right?
+      rlimitFSIZE_MB: runtime.output * 1024 * 8 //FIXME is this right?
+    },
+    meterOption: {
+      memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
+      timeLimit: runtime.cpuTime,
+      pidLimit: 1
+    }
+  } satisfies CommonJudgeOption)
+}
+
+async function runJudgerPipeline(
+  judgePipeline: Pipeline<any>,
+  store: CommonCompileStore,
+  testcase: TestCase,
+  testResult: { measure?: MeterResult; result: string }[]
+) {
+  const {
+    store: { user_measure, result }
+  } = await judgePipeline.run<CommonJudgeStore>({
+    targetPath: store.targetPath,
+    tempDir: store.tempDir,
+    case: testcase
+  })
+  testResult.push({ measure: user_measure!, result: result! })
+}
+
+function handleUnknownError(
+  testResult: { measure?: MeterResult; result: string }[]
+) {
+  testResult.push({ result: 'UNKNOWN' })
+}
+
+function handleJudgeException(
+  testResult: { measure?: MeterResult; result: string }[],
+  error: JudgeRuntimeException
+) {
+  testResult.push({ result: error.reason })
+}
+
+function handleLimitError(
+  error: LimitViolationError,
+  runtime: { memory: number; cpuTime: number; output: number },
+  testResult: { measure?: MeterResult; result: string }[]
+) {
+  const limit = error.meter!
+  try {
+    testMeterOrThrow(limit, {
+      cpuTime: runtime.cpuTime,
+      memory: runtime.memory * 1024 * 8
+    })
+  } catch (error) {
+    if (error instanceof MeterException) {
+      testResult.push({ result: error.reason })
+    } else {
+      throw error
+    }
   }
 }
