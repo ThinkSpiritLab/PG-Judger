@@ -127,7 +127,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
       for (const task of this._ctx.tasks) {
         const [output, time_ms] = await timed(() => task.task.run(result))
 
-        console.log(`Task ${task.name} finished  (+${time_ms}ms)`)
+        // console.log(`Task ${task.name} finished  (+${time_ms}ms)`)
 
         task.result = result = output
       }

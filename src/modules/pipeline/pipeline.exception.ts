@@ -4,7 +4,7 @@
  * Created Date: Su Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Tue Jun 04 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -13,6 +13,8 @@
  * Date      	By	Comments                                                     *
  * ----------	---	---------------------------------------------------------    *
  */
+
+import { MeterResult } from '../meter/meter.service'
 
 class PipelineException extends Error {
   constructor(message: string) {
@@ -38,7 +40,7 @@ class OutputLimitExceededError extends PipelineException {
   }
 }
 
-class RuntimeError extends PipelineException {
+class PipelineRuntimeError extends PipelineException {
   reason?: any
   constructor(message: string, reason?: any) {
     super(message)
@@ -52,8 +54,11 @@ class UnknownError extends PipelineException {
   }
 }
 
-class JailViolationError extends PipelineException {
-  constructor(message: string) {
+class LimitViolationError extends PipelineException {
+  constructor(
+    message: string,
+    public measure: MeterResult
+  ) {
     super(message)
   }
 }
@@ -63,7 +68,7 @@ export {
   TimeLimitExceededError,
   MemoryLimitExceededError,
   OutputLimitExceededError,
-  RuntimeError,
+  PipelineRuntimeError,
   UnknownError,
-  JailViolationError
+  LimitViolationError
 }

@@ -32,7 +32,7 @@ import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareResult, CompareService } from '../../compare/compare.service'
-import { RuntimeError } from '@/modules/pipeline/pipeline.exception'
+import { LimitViolationError, PipelineRuntimeError } from '@/modules/pipeline/pipeline.exception'
 import {
   JudgeCompileError,
   JudgeRuntimeError
@@ -196,11 +196,11 @@ export class CommonPipelineProvider {
               ])
 
               if (!measure) {
-                throw new RuntimeError('measure failed')
+                throw new PipelineRuntimeError('measure failed')
               }
 
               if (measure.returnCode !== 0) {
-                throw new RuntimeError('user program failed')
+                throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
               }
 
               ctx.store.user_exit_code = measure.returnCode

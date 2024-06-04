@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 03 2024                                              *
+ * Last Modified: Tue Jun 04 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -22,7 +22,7 @@ import { LegacyJailService } from '../jail/jail.legacy'
 import Executable, { MeteredExecuable } from '../exec/executable'
 import { ExecService } from '../exec/exec.service'
 import { range } from 'lodash'
-import { RuntimeError } from '../pipeline/pipeline.exception'
+import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
 
 type CompareMode = 'float' | 'normal' | 'strict'
 export type CompareResult = typeof compareResultMap[keyof typeof compareResultMap]
@@ -79,7 +79,7 @@ export class CompareService {
       ])
 
       if (!meter || !judgeResult) {
-        throw new RuntimeError('Missing output from ojcmp')
+        throw new PipelineRuntimeError('Missing output from ojcmp')
       }
 
       // console.log(`compare measure: ${JSON.stringify(meter)}`)

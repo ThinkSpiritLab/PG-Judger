@@ -12,7 +12,7 @@ import { JudgeResultKind } from '../judge/judge.exceptions'
 import {
   MemoryLimitExceededError,
   OutputLimitExceededError,
-  RuntimeError,
+  PipelineRuntimeError,
   TimeLimitExceededError
 } from '../pipeline/pipeline.exception'
 
@@ -214,7 +214,7 @@ export function testMeterOrThrow(
   } else if (compileResult.memory >= limit.memory) {
     throw new MemoryLimitExceededError('Memory limit exceeded')
   } else if (compileResult.signal !== -1 || compileResult.returnCode !== 0) {
-    throw new RuntimeError('Runtime error', {
+    throw new PipelineRuntimeError('Runtime error', {
       signal: compileResult.signal,
       returnCode: compileResult.returnCode
     })

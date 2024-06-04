@@ -14,9 +14,14 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import AC from "./cpp/AC"
-import CE from "./cpp/CE"
+import AC from './cpp/AC'
+import CE from './cpp/CE'
+import MLE from './cpp/MLE'
+import RE from './cpp/RE'
+import TLE from './cpp/TLE'
+import TLE2 from './cpp/TLE2'
+import WA from './cpp/WA'
 
 export const tests = {
-  cpp: [AC, CE]
+  cpp: [AC, CE, MLE, RE, TLE, TLE2, WA]
 } as const

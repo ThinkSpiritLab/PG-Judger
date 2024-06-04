@@ -9,7 +9,8 @@ import {
 import { rm } from 'fs/promises'
 import { JudgeCompileError, JudgeRuntimeError } from './judge.exceptions'
 import { getConfig } from '../exec/config-generator'
-import { MeterResult } from '../meter/meter.service'
+import { MeterResult, testMeterOrThrow } from '../meter/meter.service'
+import { LimitViolationError, MemoryLimitExceededError, OutputLimitExceededError, PipelineRuntimeError, TimeLimitExceededError } from '../pipeline/pipeline.exception'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -211,17 +212,38 @@ export class JudgeService {
         } catch (error) {
           if (error instanceof JudgeRuntimeError) {
             testResult.push({ result: error.reason })
-
-            if (policy === 'fuse') {
-              console.log('fuse! result is', error.reason)
-              break
-            } else if (policy === 'all') {
-              continue
+          } else if (error instanceof LimitViolationError) {
+            console.warn('Limit violation error', error)
+            const limit = error.measure
+            try {
+              testMeterOrThrow(limit, {
+                cpuTime: runtime.cpuTime,
+                memory: runtime.memory * 1024 * 8
+              })
+            } catch (error) {
+              if (error instanceof TimeLimitExceededError) {
+                testResult.push({ result: 'time-limit-exceeded' })
+              } else if (error instanceof MemoryLimitExceededError) {
+                testResult.push({ result: 'memory-limit-exceeded' })
+              } else if (error instanceof OutputLimitExceededError) {
+                testResult.push({ result: 'output-limit-exceeded' })
+              } else if (error instanceof PipelineRuntimeError) {
+                testResult.push({ result: 'runtime-error' })
+              } else {
+                testResult.push({ result: 'UNKNOWN' })
+                console.error('Unknown limit violation error', error)
+              }
             }
+          } else {
+            testResult.push({ result: 'UNKNOWN' })
           }
 
-          //TODO ... if other known exceptions
-          testResult.push({ result: 'UNKNOWN' })
+          if (policy === 'fuse') {
+            break
+          } else if (policy === 'all') {
+            continue
+          }
+
           throw error
         }
       }
