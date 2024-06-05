@@ -8,13 +8,13 @@ const usrCode = `
 #include </dev/random>
 `;
 
-// export const BOMBCTLE = generateNormalSelfTest("BOMBCTLE", "c", usrCode, {}, [
-//     {
-//         type: "direct",
-//         input,
-//         output,
-//         expectResultType: JudgeResultKind.CompileTimeLimitExceeded,
-//         count: false,
-//     },
-// ]);
-export default ({})
+const expectResult = 'time-limit-exceeded'
+
+export default {
+  name: 'bomb-compiler-tle',
+  usrCode,
+  input,
+  output,
+  expectResult,
+  lang: 'c'
+}

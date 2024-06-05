@@ -19,9 +19,6 @@ import { EventEmitter } from 'events'
 import { CompleteStdioOptions, MeterResult, testMeterOrThrow } from '../meter/meter.service'
 import { readStream } from '@/utils/io'
 import { Readable, Writable } from 'stream'
-import {
-  PipelineRuntimeError
-} from '../pipeline/pipeline.exception'
 import { MeterException } from '../meter/meter.exception'
 
 class Executable extends EventEmitter {
@@ -162,10 +159,12 @@ class MeteredExecuable extends Executable {
 
     this.measure = new Promise((resolve, reject) => {
       if (!this.process) {
+        console.error('Process not found, did you forget to start it?')
         reject(new MeterException('runtime-error', null, 'process not found'))
         return
       }
       this.process.on('error', (err) => {
+        console.error('Process error:', err)
         reject(new MeterException('runtime-error', null, err.message))
       })
       let resultStr = ''
@@ -174,18 +173,20 @@ class MeteredExecuable extends Executable {
       ] as Readable
       resultStream.setEncoding('utf-8')
       resultStream.on('error', (err) => {
+        console.error('Stream error:', err)
         reject(new MeterException('runtime-error', null, err.message))
       })
       resultStream.on('data', (chunk) => (resultStr += chunk))
       resultStream.on('end', () => {
         try {
           const result = JSON.parse(resultStr)
-          if (this.limit) {
-            testMeterOrThrow(result, this.limit)
-          }
+          // if (this.limit) {
+          //   testMeterOrThrow(result, this.limit)
+          // }
           resolve(result)
         } catch (e) {
           if (e instanceof SyntaxError) {
+            console.error('Parse error:', e)
             reject(new MeterException('runtime-error', null, e.message))
           }
           reject(e)

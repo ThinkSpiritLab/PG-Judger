@@ -31,7 +31,7 @@ export const cpp = {
           uidMap: [{inside: 0, outside: 0, count: 1}],
           gidMap: [{inside: 0, outside: 0, count: 1}],
         },
-        meterOption: {},
+        meterOption: { timeLimit: 2000 },
         sourceName: 'main.cpp',
         targetName: 'main',
         // tempDir: 'SET IN RUNTIME',

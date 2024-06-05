@@ -10,6 +10,13 @@ int main(void) {
 }
 `
 
-const expectResult = 'outputLimitExceeded'
+const expectResult = 'output-limit-exceeded'
 
-export default ({})
+export default {
+  name: 'bomb-infinite-output',
+  usrCode,
+  input,
+  output,
+  expectResult,
+  lang: 'c'
+}

@@ -1,8 +1,7 @@
-
 const input = `1 2
-`;
+`
 const output = `3
-`;
+`
 const usrCode = `
 #include <unistd.h>
 int main(void)
@@ -16,22 +15,15 @@ int main(void)
         sleep(1);
     return 0;
 }
-`;
+`
 
-// export const BOMBFORKBOMB = generateNormalSelfTest(
-//     "BOMBFORKBOMB",
-//     "c",
-//     usrCode,
-//     {},
-//     [
-//         {
-//             type: "direct",
-//             input,
-//             output,
-//             expectResultType: JudgeResultKind.TimeLimitExceeded,
-//             count: false,
-//         },
-//     ],
-//     2000
-// );
-export default ({})
+const expectResult = 'time-limit-exceeded'
+
+export default {
+  name: 'bomb-fork',
+  usrCode,
+  input,
+  output,
+  expectResult,
+  lang: 'c'
+}

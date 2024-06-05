@@ -105,16 +105,11 @@ export class CommonPipelineProvider {
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
               args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
-              memory_MB: option.meterOption.memoryLimit!,
+              memory_MB: option.meterOption.memoryLimit! / 8 / 1024 / 1024,
               timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: option.tempDir!, mode: 'rw' }],
-              cwd: option.tempDir!
+              cwd: option.tempDir!,
             })
-
-            // task.on('stdout', (data) => console.log(`stdout: ${data}`))
-            // task.on('stderr', (data) => console.log(`stderr: ${data}`))
-            // task.on('close', (code) => console.log(`close: ${code}`))
-            // task.on('error', (err) => console.error(`error: ${err}`))
 
             task.start()
 

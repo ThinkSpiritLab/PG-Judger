@@ -215,6 +215,7 @@ export function testMeterOrThrow(
   } else if (res.memory >= limit.memory) {
     throw new MeterException('memory-limit-exceeded', res)
   } else if (res.signal !== -1 || res.returnCode !== 0) {
+    console.warn('res', res)
     throw new MeterException('runtime-error', res)
   }
 }

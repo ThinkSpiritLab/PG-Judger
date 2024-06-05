@@ -14,9 +14,11 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import killTimer from "./kill-timer";
-import stack from "./stack";
+import bull from './bull'
+import cole from './cole'
+import ctle from './ctle'
+import forkBomb from './fork-bomb'
+import killTimer from './kill-timer'
+import stack from './stack'
 
-
-
-export const bomb = [stack, killTimer]
+export const bomb = [stack, killTimer, forkBomb, ctle, cole, bull]

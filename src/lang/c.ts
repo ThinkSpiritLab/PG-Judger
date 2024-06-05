@@ -14,7 +14,10 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { CommonCompileOption, CommonJudgeOption } from "../modules/compile/pipelines/common";
+import {
+  CommonCompileOption,
+  CommonJudgeOption
+} from '../modules/compile/pipelines/common'
 
 export const c = {
   lang: 'c',
@@ -23,19 +26,19 @@ export const c = {
   configs: {
     compile: {
       use: 'common-compile',
-      option : {
+      option: {
         skip: false,
         compilerExec: '/usr/bin/gcc',
         compilerArgs: ['-O2'],
         jailOption: {
-          uidMap: [{inside: 0, outside: 0, count: 1}],
-          gidMap: [{inside: 0, outside: 0, count: 1}],
+          uidMap: [{ inside: 0, outside: 0, count: 1 }],
+          gidMap: [{ inside: 0, outside: 0, count: 1 }]
         },
-        meterOption: {},
+        meterOption: { timeLimit: 2000 },
         sourceName: 'main.c',
-        targetName: 'main',
+        targetName: 'main'
         // tempDir: 'SET IN RUNTIME',
-      } satisfies CommonCompileOption,
+      } satisfies CommonCompileOption
     },
     run: {
       use: 'common-run-testcase',
@@ -43,10 +46,10 @@ export const c = {
         // tempDir: 'SET IN RUNTIME',
         // targetPath: 'SET IN RUNTIME',
         jailOption: {
-          uidMap: [{inside: 0, outside: 0, count: 1}],
-          gidMap: [{inside: 0, outside: 0, count: 1}],
+          uidMap: [{ inside: 0, outside: 0, count: 1 }],
+          gidMap: [{ inside: 0, outside: 0, count: 1 }]
         },
-        meterOption: {},
+        meterOption: {}
       } satisfies CommonJudgeOption
     }
   }

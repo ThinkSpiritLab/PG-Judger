@@ -57,7 +57,7 @@ describe('JudgeService', () => {
           expect(res).toBeDefined()
           const summary = service.summaryResult(res!, 'all')
           expect(summary).toEqual(t.expectResult)
-        }, 5000)
+        }, 4000)
       })
     })
   })

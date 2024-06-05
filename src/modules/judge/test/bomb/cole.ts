@@ -15,4 +15,13 @@ int main[-1u]={1};
 //         count: false,
 //     },
 // ]);
-export default ({})
+const expectResult = 'compile-error'
+
+export default {
+  name: 'bomb-compiler-ole',
+  usrCode,
+  input,
+  output,
+  expectResult,
+  lang: 'c'
+}
