@@ -1,9 +1,8 @@
-
 const input = `
-`;
+`
 const output = `67108864
 67108864
-`;
+`
 const usrCode = `
 #include <stdio.h>
 #include <sys/resource.h>
@@ -20,15 +19,15 @@ int main(void)
 
     return 0;
 }
-`;
+`
 
-// export const BOOMSTACK = generateNormalSelfTest("BOOMSTACK", "c", usrCode, {}, [
-//     {
-//         type: "direct",
-//         input,
-//         output,
-//         expectResultType: JudgeResultKind.Accepted,
-//         count: false,
-//     },
-// ]);
-export default ({})
+const expectResult = 'accepted'
+
+export default {
+  name: 'bomb-stack',
+  usrCode,
+  input,
+  output,
+  expectResult,
+  lang: 'c'
+}

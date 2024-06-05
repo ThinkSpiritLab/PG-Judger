@@ -20,7 +20,7 @@ import { Injectable } from '@nestjs/common'
 import { ExecService } from '@/modules/exec/exec.service'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { writeFile, rm, open } from 'fs/promises'
+import { writeFile, rm, open, readFile } from 'fs/promises'
 import { TMP_DIR_PREFIX } from '../constant'
 import {
   MeterResult,
@@ -198,7 +198,10 @@ export class CommonPipelineProvider {
               ])
 
               if (!measure) {
-                throw new PipelineRuntimeError('measure failed', 'runtime-error')
+                throw new PipelineRuntimeError(
+                  'measure failed',
+                  'runtime-error'
+                )
               }
 
               if (measure.returnCode !== 0) {
@@ -207,6 +210,11 @@ export class CommonPipelineProvider {
                   cpuTime: option.meterOption.timeLimit!,
                   memory: option.meterOption.memoryLimit!
                 })
+
+                throw new PipelineRuntimeError(
+                  'user program failed',
+                  'runtime-error'
+                )
               }
 
               ctx.store.user_exit_code = measure.returnCode
@@ -230,9 +238,12 @@ export class CommonPipelineProvider {
               userOutputPath,
               'normal'
             )
-
+            // log users output
             if (result === 'presentation-error') {
-              throw new JudgeException('presentation-error', 'presentation-error')
+              throw new JudgeException(
+                'presentation-error',
+                'presentation-error'
+              )
             } else if (result === 'wrong-answer') {
               throw new JudgeException('wrong-answer', 'wrong-answer')
             }

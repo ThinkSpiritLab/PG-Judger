@@ -34,7 +34,8 @@ export type JudgeTest = {
       output: 1024
       message: 1024
     }
-  }
+  },
+  lang?: string
 }
 
 export function toNormalJudgeRequest(judgeTest: JudgeTest, lang: string): NormalJudgeRequest {
@@ -60,7 +61,7 @@ export function toNormalJudgeRequest(judgeTest: JudgeTest, lang: string): Normal
       },
       env: {
         arch: 'x64',
-        lang,
+        lang: judgeTest.lang || lang,
         options: {},
         system: 'linux'
       }

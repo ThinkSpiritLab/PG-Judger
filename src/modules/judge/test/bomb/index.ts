@@ -1,7 +1,7 @@
 /*
  * File: index.ts                                                              *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: We Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Wed Jun 05 2024                                              *
@@ -14,12 +14,9 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { bomb } from "./bomb";
-import { c } from "./c";
-import { cpp } from "./cpp";
+import killTimer from "./kill-timer";
+import stack from "./stack";
 
-export const tests = {
-  cpp,
-  c,
-  bomb
-} as const
+
+
+export const bomb = [stack, killTimer]

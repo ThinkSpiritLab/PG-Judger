@@ -118,7 +118,7 @@ export class ExecService {
     // rlimitAS_MB = 1024 * 1024,
     rlimitCPU = 600,
     rlimitFSIZE_MB = 1024,
-    rlimitSTACK_MB = 'soft',
+    rlimitSTACK_MB = 64,
     symlink = [],
     tmpfsMount = []
   }: {

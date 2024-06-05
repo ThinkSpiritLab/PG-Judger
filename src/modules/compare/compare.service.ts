@@ -50,10 +50,6 @@ export class CompareService {
     this.ojcmpPath = this.configService.getOrThrow<string>('OJ_CMP_PATH')
   }
 
-  async test() {
-    return await this.compare('/tmp/a', '/tmp/b', 'normal')
-  }
-
   async compare(a: string, b: string, mode: CompareMode) {
     let cmp: MeteredExecuable | null = null
     let aFH: FileHandle | null = null
@@ -77,6 +73,8 @@ export class CompareService {
         cmp.measure,
         cmp.rdStdout()
       ])
+
+      //TODO check compare meter here
 
       if (!judgeResult) {
         throw new PipelineRuntimeError('no output from compare', 'runtime-error') //FIXME not a pipeline error

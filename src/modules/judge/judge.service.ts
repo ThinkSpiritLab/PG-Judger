@@ -13,6 +13,9 @@ import { Pipeline } from '../pipeline/pipeline'
 import { JudgeException } from './judge.exceptions'
 import { MeterException } from '../meter/meter.exception'
 import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
+import { toNormalJudgeRequest } from './test/utils'
+import killTimer from './test/bomb/kill-timer'
+import stack from './test/bomb/stack'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -89,72 +92,7 @@ export class JudgeService {
     private readonly pipelineService: PipelineService
   ) {
     // setTimeout(() => {
-    //   this.normalJudge({
-    //     id: '1',
-    //     cases: [
-    //       {
-    //         input: '1 1\n',
-    //         output: '2\n'
-    //       },
-    //       {
-    //         input: '2 2\n',
-    //         output: '114514\n'
-    //       },
-    //       {
-    //         input: '3 3\n',
-    //         output: '6\n'
-    //       },
-    //       {
-    //         input: '4 4\n',
-    //         output: '8\n'
-    //       },
-    //       {
-    //         input: '5 5\n',
-    //         output: '10\n'
-    //       }
-    //     ],
-    //     policy: 'all',
-    //     type: 'normal',
-    //     user: {
-    //       src: {
-    //         type: 'plain-text',
-    //         content: `
-    //         #include <iostream>
-    //         using namespace std;
-    //         int main() {
-    //           int a, b;
-    //           cin >> a >> b;
-    //           cout << a + b << endl;
-    //           return 0;
-    //         }
-    //         `
-    //         // content: `
-    //         // int main() {
-    //         //   return 1;
-    //         // }
-    //         // `
-    //       },
-    //       env: {
-    //         lang: 'cpp',
-    //         arch: 'x64',
-    //         options: {},
-    //         system: 'linux'
-    //       },
-    //       limit: {
-    //         compiler: {
-    //           cpuTime: 1000,
-    //           memory: 1024,
-    //           message: 1024,
-    //           output: 1024
-    //         },
-    //         runtime: {
-    //           cpuTime: 1000,
-    //           memory: 1024,
-    //           output: 1024
-    //         }
-    //       }
-    //     }
-    //   })
+    //   this.normalJudge(toNormalJudgeRequest(stack, 'c')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
     // }, 600)
   }
 
