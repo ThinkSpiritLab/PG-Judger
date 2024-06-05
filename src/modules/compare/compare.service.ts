@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Tue Jun 04 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -36,10 +36,10 @@ export class CompareService {
   ojcmpPath: string
 
   limits: {
-    memory_kb: number
+    memory_MB: number
     timeout_ms: number
   } = {
-    memory_kb: 1024 * 1024,
+    memory_MB: 1024,
     timeout_ms: 3000
   }
 
@@ -66,7 +66,7 @@ export class CompareService {
       cmp = await this.execService.runWithJailAndMeterFasade({
         command: this.ojcmpPath,
         args: [mode, '--user-fd', '0', '--std-fd', '3'],
-        memory_KB: this.limits.memory_kb,
+        memory_MB: this.limits.memory_MB,
         timeout_ms: this.limits.timeout_ms,
         stdio: [aFH.fd, 'pipe', 'pipe', bFH.fd]
       })
@@ -78,8 +78,8 @@ export class CompareService {
         cmp.rdStdout()
       ])
 
-      if (!meter || !judgeResult) {
-        throw new PipelineRuntimeError('Missing output from ojcmp', 'internal-error')
+      if (!judgeResult) {
+        throw new PipelineRuntimeError('no output from compare', 'runtime-error') //FIXME not a pipeline error
       }
 
       // console.log(`compare measure: ${JSON.stringify(meter)}`)

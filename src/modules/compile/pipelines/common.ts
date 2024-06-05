@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Tue Jun 04 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -25,18 +25,16 @@ import { TMP_DIR_PREFIX } from '../constant'
 import {
   MeterResult,
   MeterService,
-  MeterSpawnOption
+  MeterSpawnOption,
+  testMeterOrThrow
 } from '@/modules/meter/meter.service'
 import { JailSpawnOption, LegacyJailService } from '../../jail/jail.legacy'
 import { ConfigService } from '@nestjs/config'
 import { RegisterPipeline } from '@/modules/pipeline/pipeline.decorator'
 import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareResult, CompareService } from '../../compare/compare.service'
-import { LimitViolationError, PipelineRuntimeError } from '@/modules/pipeline/pipeline.exception'
-import {
-  JudgeCompileError,
-  JudgeRuntimeError
-} from '@/modules/judge/judge.exceptions'
+import { PipelineRuntimeError } from '@/modules/pipeline/pipeline.exception'
+import { JudgeException } from '@/modules/judge/judge.exceptions'
 
 export type CommonCompileOption = {
   skip: boolean
@@ -107,7 +105,7 @@ export class CommonPipelineProvider {
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
               args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
-              memory_KB: option.meterOption.memoryLimit! * 1024, //TODO remove magic numbers
+              memory_MB: option.meterOption.memoryLimit!,
               timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: option.tempDir!, mode: 'rw' }],
               cwd: option.tempDir!
@@ -128,7 +126,11 @@ export class CommonPipelineProvider {
             console.log(`compile measure: ${JSON.stringify(measure)}`)
 
             if (measure.returnCode !== 0) {
-              throw new JudgeCompileError('compile failed')
+              // throw new JudgeCompileError('compile failed')
+              testMeterOrThrow(measure, {
+                cpuTime: option.meterOption.timeLimit!,
+                memory: option.meterOption.memoryLimit!
+              })
             }
 
             ctx.store.exit_code = exit_code
@@ -181,7 +183,7 @@ export class CommonPipelineProvider {
               const task = await this.execService.runWithJailAndMeterFasade({
                 command: ctx.store.targetPath!,
                 args: [],
-                memory_KB: option.meterOption.memoryLimit || 1024 * 128, //TODO remove magic numbers
+                memory_MB: option.meterOption.memoryLimit || 1024, //TODO remove magic numbers
                 timeout_ms: option.meterOption.timeLimit || 2000,
                 stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
                 cwd: ctx.store.tempDir,
@@ -196,11 +198,15 @@ export class CommonPipelineProvider {
               ])
 
               if (!measure) {
-                throw new PipelineRuntimeError('measure failed', 'internal-error')
+                throw new PipelineRuntimeError('measure failed', 'runtime-error')
               }
 
               if (measure.returnCode !== 0) {
-                throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
+                // throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
+                testMeterOrThrow(measure, {
+                  cpuTime: option.meterOption.timeLimit!,
+                  memory: option.meterOption.memoryLimit!
+                })
               }
 
               ctx.store.user_exit_code = measure.returnCode
@@ -226,12 +232,9 @@ export class CommonPipelineProvider {
             )
 
             if (result === 'presentation-error') {
-              throw new JudgeRuntimeError(
-                'presentation-error',
-                'presentation-error'
-              )
+              throw new JudgeException('presentation-error', 'presentation-error')
             } else if (result === 'wrong-answer') {
-              throw new JudgeRuntimeError('wrong-answer', 'wrong-answer')
+              throw new JudgeException('wrong-answer', 'wrong-answer')
             }
 
             ctx.store.result = result

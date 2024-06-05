@@ -8,13 +8,8 @@ import {
   JailSymlinkOption,
   JailTmpfsMountOption
 } from '../jail/jail.legacy'
-import { JudgeResultKind } from '../judge/judge.exceptions'
-import {
-  MemoryLimitExceededError,
-  OutputLimitExceededError,
-  PipelineRuntimeError,
-  TimeLimitExceededError
-} from '../pipeline/pipeline.exception'
+import { MeterException } from './meter.exception'
+
 
 const logger = new Logger('MeterService')
 
@@ -178,8 +173,10 @@ export class MeterService {
 }
 
 export interface MeterSpawnOption {
-  timeLimit?: number // ms
-  memoryLimit?: number // byte
+  /** in ms */
+  timeLimit?: number
+  /** in byte */
+  memoryLimit?: number
   pidLimit?: number
   meterFd: number
   uid?: number
@@ -187,34 +184,38 @@ export interface MeterSpawnOption {
 }
 
 export interface MeterResult {
-  memory: number // bytes
+   /** in byte */
+  memory: number
   returnCode: number
   signal: number
   time: {
-    real: number // ms
-    sys: number // ms
-    usr: number // ms
+    /** in ms */
+    real: number
+    /** in ms */
+    sys: number
+    /** in ms */
+    usr: number
   }
 }
 
 export function testMeterOrThrow(
-  compileResult: MeterResult,
+  res: MeterResult,
   limit: { cpuTime: number; memory: number } 
 ) {
-  const compileSumTime = compileResult.time.sys + compileResult.time.usr
-  if (compileResult.signal === 25) {
-    throw new OutputLimitExceededError('Output limit exceeded')
+  const compileSumTime = res.time.sys + res.time.usr
+  if (res.signal === 25) {
+    throw new MeterException('output-limit-exceeded', res)
   } else if (
     compileSumTime > limit.cpuTime ||
-    (compileResult.time.real > limit.cpuTime &&
-      compileResult.returnCode === -1 &&
-      compileResult.signal === 9)
+    (res.time.real > limit.cpuTime &&
+      res.returnCode === -1 &&
+      res.signal === 9)
   ) {
-    throw new TimeLimitExceededError('Time limit exceeded')
-  } else if (compileResult.memory >= limit.memory) {
-    throw new MemoryLimitExceededError('Memory limit exceeded')
-  } else if (compileResult.signal !== -1 || compileResult.returnCode !== 0) {
-    throw new PipelineRuntimeError('Runtime error', 'runtime-error', compileResult)
+    throw new MeterException('time-limit-exceeded', res)
+  } else if (res.memory >= limit.memory) {
+    throw new MeterException('memory-limit-exceeded', res)
+  } else if (res.signal !== -1 || res.returnCode !== 0) {
+    throw new MeterException('runtime-error', res)
   }
 }
 

@@ -1,7 +1,7 @@
 /*
  * File: index.ts                                                              *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Wed Jun 05 2024                                              *
@@ -14,10 +14,26 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { c } from "./c";
-import { cpp } from "./cpp";
+import { ExecutableInfo } from '@/modules/judge/judge.service'
+import { cpp } from './cpp'
+import { c } from './c'
 
-export const tests = {
-  cpp,
-  c,
-} as const
+type Lang = {
+  lang: string
+  tag: string
+  configs: {
+    compile: Record<string, any>
+    run: Record<string, any>
+    [key: string]: Record<string, any>
+  }
+}
+
+const langs: Lang[] = [cpp, c]
+
+export function searchLangConfigByExecInfo(execInfo: ExecutableInfo) {
+  return langs.find((lang) => lang.lang === execInfo.env.lang) //TODO add more filters
+}
+
+export function serachLangByTag(tag: string) {
+  return langs.find((lang) => lang.tag === tag)
+}

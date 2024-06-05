@@ -1,7 +1,7 @@
 /*
- * File: index.ts                                                              *
+ * File: meter.exception.ts                                                    *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: We Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Wed Jun 05 2024                                              *
@@ -14,10 +14,16 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { c } from "./c";
-import { cpp } from "./cpp";
+import { MeterResult } from "./meter.service"
 
-export const tests = {
-  cpp,
-  c,
-} as const
+type MeterErrorReason =
+  | 'output-limit-exceeded'
+  | 'runtime-error'
+  | 'memory-limit-exceeded'
+  | 'time-limit-exceeded'
+
+export class MeterException extends Error {
+  constructor(public reason: MeterErrorReason, public meter: MeterResult | null, message?: string) {
+    super(message)
+  }
+}

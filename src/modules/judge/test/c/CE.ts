@@ -1,7 +1,7 @@
 /*
- * File: index.ts                                                              *
+ * File: CE.ts                                                                 *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: We Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Wed Jun 05 2024                                              *
@@ -14,10 +14,29 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { c } from "./c";
-import { cpp } from "./cpp";
 
-export const tests = {
-  cpp,
-  c,
-} as const
+
+const input = `1 2
+`;
+const output = `3
+`;
+const usrCode = `
+#include <cstdio>
+
+int main(void) {
+    int a, b;
+    scanf("%d%d", &a, &b);
+    printf("%d\\n", a + b);
+    return 0;
+}
+`;
+
+const expectResult = 'compile-error'
+
+export default ({
+  name: "c-CE",
+  usrCode,
+  input,
+  output,
+  expectResult
+})

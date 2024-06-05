@@ -4,7 +4,7 @@
  * Created Date: Tu Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Tue Jun 04 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -37,7 +37,7 @@ export type JudgeTest = {
   }
 }
 
-export function toNormalJudgeRequest(judgeTest: JudgeTest): NormalJudgeRequest {
+export function toNormalJudgeRequest(judgeTest: JudgeTest, lang: string): NormalJudgeRequest {
   return {
     id: '1',
     user: {
@@ -60,7 +60,7 @@ export function toNormalJudgeRequest(judgeTest: JudgeTest): NormalJudgeRequest {
       },
       env: {
         arch: 'x64',
-        lang: 'cpp',
+        lang,
         options: {},
         system: 'linux'
       }

@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Tue Jun 04 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -20,9 +20,9 @@ import { CompleteStdioOptions, MeterResult, testMeterOrThrow } from '../meter/me
 import { readStream } from '@/utils/io'
 import { Readable, Writable } from 'stream'
 import {
-  LimitViolationError,
   PipelineRuntimeError
 } from '../pipeline/pipeline.exception'
+import { MeterException } from '../meter/meter.exception'
 
 class Executable extends EventEmitter {
   private _executablePath: string
@@ -162,11 +162,11 @@ class MeteredExecuable extends Executable {
 
     this.measure = new Promise((resolve, reject) => {
       if (!this.process) {
-        reject(new PipelineRuntimeError('Process not started.', 'internal-error'))
+        reject(new MeterException('runtime-error', null, 'process not found'))
         return
       }
       this.process.on('error', (err) => {
-        reject(new PipelineRuntimeError(err.message, 'internal-error'))
+        reject(new MeterException('runtime-error', null, err.message))
       })
       let resultStr = ''
       const resultStream: Readable = this.process.stdio[
@@ -174,7 +174,7 @@ class MeteredExecuable extends Executable {
       ] as Readable
       resultStream.setEncoding('utf-8')
       resultStream.on('error', (err) => {
-        reject(new PipelineRuntimeError('measure failed', 'internal-error'))
+        reject(new MeterException('runtime-error', null, err.message))
       })
       resultStream.on('data', (chunk) => (resultStr += chunk))
       resultStream.on('end', () => {
@@ -185,6 +185,9 @@ class MeteredExecuable extends Executable {
           }
           resolve(result)
         } catch (e) {
+          if (e instanceof SyntaxError) {
+            reject(new MeterException('runtime-error', null, e.message))
+          }
           reject(e)
         }
       })

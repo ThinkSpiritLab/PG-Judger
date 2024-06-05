@@ -1,34 +1,15 @@
 import { Injectable } from '@nestjs/common'
-import {
-  CommonPipelineProvider
-} from './pipelines/common'
-import { tmpdir } from 'os'
-import { JailService } from '../jail/jail.service'
-import { MeterService } from '../meter/meter.service'
-import { LegacyJailService } from '../jail/jail.legacy'
 import { ExecutableInfo } from '../judge/judge.service'
-import { searchLangConfigByExecInfo } from './lang'
+import { searchLangConfigByExecInfo } from '../../lang'
 import { PipelineService } from '../pipeline/pipeline.service'
+import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
+import { MeterException } from '../meter/meter.exception'
 
 @Injectable()
 export class CompileService {
   constructor(
-    private readonly simpleCompileProvider: CommonPipelineProvider,
-    private readonly jailService: JailService,
-    private readonly legacyMeterService: MeterService,
-    private readonly legacyJailService: LegacyJailService,
     private readonly pipelineService: PipelineService
-  ) {
-    // setTimeout(() => {
-    //   this.test2()
-    //     .then(({ store }) => {
-    //       console.log('compile phase done', store)
-    //     })
-    //     .catch((e) => {
-    //       console.error(`compile failed: `, e)
-    //     })
-    // }, 600)
-  }
+  ) {}
 
   async test2() {
     const execInfo: ExecutableInfo = {
@@ -89,18 +70,30 @@ export class CompileService {
     )
     const pipeline = pipelineFactory(configs.compile.option)
 
-    return await pipeline.run({
-      source: execInfo.src.content
-    }) //TODO add validation
+    try {
+      return await pipeline.run({
+        source: execInfo.src.content
+      }) //TODO add validation
+    } catch (error) {
+      if (error instanceof PipelineRuntimeError) {
+        throw new CompileException(
+          error.message,
+          'pipeline-error'
+        )
+      }
+      if (error instanceof MeterException) {
+        throw new CompileException(
+          error.message,
+          'meter-error'
+        )
+      }
+      throw error
+    }
   }
 }
 
-type CompileExceptionType = 'TLE' | 'MLE' | 'CE' | 'UNKNOWN' | 'BAD_CONFIG'
-class CompileException extends Error {
-  type: CompileExceptionType
-  constructor(message: string, type: CompileExceptionType) {
+export class CompileException extends Error {
+  constructor(message: string, public type: string) {
     super(message)
-    this.name = 'CompileException'
-    this.type = type
   }
 }

@@ -47,12 +47,12 @@ describe('JudgeService', () => {
     expect(service).toBeDefined()
   })
 
-  Object.keys(langsTests).forEach((key) => {
-    const tests = langsTests[key]
-    describe(`language ${key}`, () => {
+  Object.keys(langsTests).forEach((lang) => {
+    const tests = langsTests[lang]
+    describe(`language ${lang}`, () => {
       tests.forEach((t: JudgeTest) => {
         it(t.name, async () => {
-          const req = toNormalJudgeRequest(t)
+          const req = toNormalJudgeRequest(t, lang)
           const res = await service.judge(req)
           expect(res).toBeDefined()
           const summary = service.summaryResult(res!, 'all')

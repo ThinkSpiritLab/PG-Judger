@@ -1,7 +1,7 @@
 /*
  * File: index.ts                                                              *
  * Project: pg-judger                                                          *
- * Created Date: Mo Jun 2024                                                   *
+ * Created Date: We Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Wed Jun 05 2024                                              *
@@ -14,10 +14,8 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { c } from "./c";
-import { cpp } from "./cpp";
+import AC from "./AC";
+import CE from "./CE";
+import WA from "./WA";
 
-export const tests = {
-  cpp,
-  c,
-} as const
+export const c = [AC, CE, WA]

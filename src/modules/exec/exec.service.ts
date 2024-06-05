@@ -7,7 +7,7 @@ import {
   MeterSpawnOption
 } from '../meter/meter.service'
 import { JailSpawnOption, LegacyJailService } from '../jail/jail.legacy'
-import  { MeteredExecuable } from './executable'
+import { MeteredExecuable } from './executable'
 import { range } from 'lodash'
 import { ConfigService } from '@nestjs/config'
 
@@ -95,8 +95,7 @@ export class ExecService {
         args: jailArgs,
         stdio
       },
-      meterOption.meterFd,
-
+      meterOption.meterFd
     )
   }
 
@@ -104,7 +103,7 @@ export class ExecService {
     command,
     args,
     timeout_ms,
-    memory_KB,
+    memory_MB,
     stdio = [],
     gid = 0,
     uid = 0,
@@ -115,28 +114,27 @@ export class ExecService {
     env = {},
     uidMap = [],
     gidMap = [],
-    passFd = [], // we pass all, cannot be set
-    rlimitAS_MB: rlimitAS = 1024 * 1024,
+    // passFd = [], // we pass all, cannot be set
+    // rlimitAS_MB = 1024 * 1024,
     rlimitCPU = 600,
-    rlimitFSIZE_MB: rlimitFSIZE_MB = 1024 * 1024,
-    rlimitSTACK_MB: rlimitSTACK_MB = 'soft', 
+    rlimitFSIZE_MB = 1024,
+    rlimitSTACK_MB = 'soft',
     symlink = [],
     tmpfsMount = []
   }: {
     command: string
     args: string[]
     timeout_ms: number
-    memory_KB: number
+    memory_MB: number
     stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit'>) {
-
-    while (stdio.length < 3) stdio.push('pipe') 
+    while (stdio.length < 3) stdio.push('pipe')
     stdio.push('pipe') // append a pipe for meter
 
     const meter: MeterSpawnOption = {
       meterFd: stdio.length - 1, // append to the end, normally 3 or 4(if using hc and ojcmp, it is stdin stdout stderr userFd meterFd)
-      memoryLimit: memory_KB,
+      memoryLimit: memory_MB * 1024 * 8,
       timeLimit: timeout_ms,
       gid,
       uid,
@@ -161,7 +159,9 @@ export class ExecService {
       gidMap,
       // passFd,
       passFd: range(stdio.length),
-      rlimitAS_MB: memory_KB / 1024,
+      //XXX this is intentionally set to 8GB. if we set this exactly to memory_MB, the meter will
+      //    unable to measure the memory usage of the program, but directly throw a runtime error
+      // rlimitAS_MB: 1024 * 8 *1024, 
       rlimitCPU,
       rlimitFSIZE_MB,
       rlimitSTACK_MB,

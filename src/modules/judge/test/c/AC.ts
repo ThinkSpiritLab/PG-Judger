@@ -1,5 +1,5 @@
 /*
- * File: index.ts                                                              *
+ * File: ac.ts                                                                 *
  * Project: pg-judger                                                          *
  * Created Date: Mo Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
@@ -14,10 +14,27 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { c } from "./c";
-import { cpp } from "./cpp";
+const input = `1 2
+`;
+const output = `3
+`;
+const usrCode = `
+#include <stdio.h>
 
-export const tests = {
-  cpp,
-  c,
-} as const
+int main(void) {
+    int a, b;
+    scanf("%d%d", &a, &b);
+    printf("%d\\n", a + b);
+    return 0;
+}
+`;
+
+const expectResult = 'accepted'
+
+export default ({
+  name: "c-AC",
+  usrCode,
+  input,
+  output,
+  expectResult
+})

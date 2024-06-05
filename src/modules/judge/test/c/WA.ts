@@ -1,10 +1,10 @@
 /*
- * File: index.ts                                                              *
+ * File: ac.ts                                                                 *
  * Project: pg-judger                                                          *
- * Created Date: Sa Jun 2024                                                   *
+ * Created Date: Mo Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -14,25 +14,27 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { ExecutableInfo } from '@/modules/judge/judge.service'
-import { cpp } from './cpp'
+const input = `1 2
+`;
+const output = `3
+`;
+const usrCode = `
+#include <stdio.h>
 
-type Lang = {
-  lang: string
-  tag: string
-  configs: {
-    compile: Record<string, any>
-    run: Record<string, any>
-    [key: string]: Record<string, any>
-  }
+int main(void) {
+    int a, b;
+    scanf("%d%d", &a, &b);
+    printf("%d\\n", a + b + 1);
+    return 0;
 }
+`;
 
-const langs: Lang[] = [cpp]
+const expectResult = 'wrong-answer'
 
-export function searchLangConfigByExecInfo(execInfo: ExecutableInfo) {
-  return langs.find((lang) => lang.lang === execInfo.env.lang) //TODO add more filters
-}
-
-export function serachLangByTag(tag: string) {
-  return langs.find((lang) => lang.tag === tag)
-}
+export default ({
+  name: "c-WA",
+  usrCode,
+  input,
+  output,
+  expectResult
+})

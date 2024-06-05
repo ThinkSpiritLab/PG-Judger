@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 03 2024                                              *
+ * Last Modified: Wed Jun 05 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -14,7 +14,7 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import { CommonCompileOption, CommonJudgeOption } from "../pipelines/common";
+import { CommonCompileOption, CommonJudgeOption } from "../modules/compile/pipelines/common";
 
 export const cpp = {
   lang: 'cpp',

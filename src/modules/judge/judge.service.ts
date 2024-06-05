@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { CompileService } from '../compile/compile.service'
+import { CompileException, CompileService } from '../compile/compile.service'
 import { PipelineService } from '../pipeline/pipeline.service'
 import {
   CommonCompileStore,
@@ -7,21 +7,12 @@ import {
   CommonJudgeStore
 } from '../compile/pipelines/common'
 import { rm } from 'fs/promises'
-import {
-  JudgeCompileError,
-  JudgeRuntimeError as JudgeRuntimeException
-} from './judge.exceptions'
 import { getConfig } from '../exec/config-generator'
 import { MeterResult, testMeterOrThrow } from '../meter/meter.service'
-import {
-  LimitViolationError,
-  MemoryLimitExceededError,
-  MeterException,
-  OutputLimitExceededError,
-  PipelineRuntimeError,
-  TimeLimitExceededError
-} from '../pipeline/pipeline.exception'
 import { Pipeline } from '../pipeline/pipeline'
+import { JudgeException } from './judge.exceptions'
+import { MeterException } from '../meter/meter.exception'
+import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -185,7 +176,20 @@ export class JudgeService {
     try {
       store = (await this.compileService.compile(user))
         .store as CommonCompileStore
+    } catch (error) {
+      if (
+        error instanceof PipelineRuntimeError ||
+        error instanceof CompileException 
+      ) {
+        return cases.map(() => ({ result: 'compile-error' }))
+      }
+    }
 
+    if (store == null) {
+      throw new Error('store is null')
+    }
+
+    try {
       const judgePipelineFactory = this.pipelineService.getPipeline(
         'common-run-testcase'
       )
@@ -206,13 +210,14 @@ export class JudgeService {
         try {
           await runJudgerPipeline(judgePipeline, store, testcase, testResult)
         } catch (error) {
-          if (error instanceof JudgeRuntimeException) {
+          if (error instanceof JudgeException) {
             // WA, PE, RE
             handleJudgeException(testResult, error)
-          } else if (error instanceof LimitViolationError) {
+          } else if (error instanceof MeterException) {
             // TLE, MLE, OLE
             handleLimitError(error, runtime, testResult)
           } else {
+            console.error(error)
             handleUnknownError(testResult)
           }
 
@@ -225,29 +230,16 @@ export class JudgeService {
           throw error
         }
       }
-      // if shorter than cases, then it's a fuse
-      // append the result with 'UNJUDGED'
+
       testResult.push(
         ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
       )
       console.log(testResult)
-      //TODO
-      // we also do summary here
-      // if all test cases are AC, then return AC
-      // if any compile time error, show compile error
-      // then if any runtime error, show runtime error
 
       return testResult
     } catch (error) {
-      if (error instanceof JudgeCompileError) {
-        // console.log('compile error', error.message)
-        // return results filled with compile error
-        return cases.map(() => ({ result: 'compile-error' }))
-      }
-      throw error //FIXME check this
-      //TODO ... if other known exceptions
+      throw error
     } finally {
-      // clean up
       store && rm(store.tempDir, { recursive: true })
     }
   }
@@ -272,7 +264,7 @@ export class JudgeService {
     policy: TestPolicy
   ) {
     if (!results) {
-      return 'UNKNOWN'
+      return 'NO_RESULT'
     }
 
     if (policy === 'fuse') {
@@ -285,7 +277,7 @@ export class JudgeService {
       }
     }
     // return first non-AC result
-    return results.find((r) => r.result !== 'accepted')?.result || 'UNKNOWN'
+    return results.find((r) => r.result !== 'accepted')?.result || 'UNKNOWN_ERROR'
   }
 }
 
@@ -296,11 +288,11 @@ function configureJudgePipeline(
   return judgePipelineFactory({
     jailOption: {
       timeLimit_s: runtime.cpuTime,
-      rlimitAS_MB: runtime.memory * 1024 * 8, //FIXME is this right?
-      rlimitFSIZE_MB: runtime.output * 1024 * 8 //FIXME is this right?
+      rlimitAS_MB: runtime.memory, //FIXME is this right?
+      rlimitFSIZE_MB: runtime.output //FIXME is this right?
     },
     meterOption: {
-      memoryLimit: runtime.memory * 1024 * 8, //FIXME is this right?
+      memoryLimit: runtime.memory, //FIXME is this right?
       timeLimit: runtime.cpuTime,
       pidLimit: 1
     }
@@ -331,13 +323,13 @@ function handleUnknownError(
 
 function handleJudgeException(
   testResult: { measure?: MeterResult; result: string }[],
-  error: JudgeRuntimeException
+  error: JudgeException
 ) {
   testResult.push({ result: error.reason })
 }
 
 function handleLimitError(
-  error: LimitViolationError,
+  error: MeterException,
   runtime: { memory: number; cpuTime: number; output: number },
   testResult: { measure?: MeterResult; result: string }[]
 ) {
