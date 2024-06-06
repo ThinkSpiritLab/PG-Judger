@@ -44,16 +44,16 @@ export type CommonCompileOption = {
   meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
   sourceName: string
   targetName: string
-  tempDir: string
   targetPath?: string
 }
 
 export type CommonCompileStore = {
-  source: string
+  source: string //TODO split prerun and runtime variables
+  tempDir: string
+
   targetPath: string
   exit_code: number
   measure: MeterResult
-  tempDir: string
 }
 
 export type CommonJudgeOption = {
@@ -63,9 +63,8 @@ export type CommonJudgeOption = {
 
 export type CommonJudgeStore = {
   targetPath: string
-  tempDir: string
   case: TestCase
-
+  tempDir: string
   // set in runtime
   user_exit_code?: number
   result?: CompareResult
@@ -90,27 +89,27 @@ export class CommonPipelineProvider {
       //   name: 'create-temp-dir'
       // })
 
-      return pipe(() => option.tempDir)
+      return pipe(() => ctx.store.tempDir)
         .pipe(
           async (path) => {
             const file = join(path, option.sourceName)
             await writeFile(file, ctx.store.source)
-            option.tempDir = path
+            ctx.store.tempDir = path
             return file
           },
           { name: 'write-source-file' }
         )
         .pipe(
           async (srcPath) => {
-            option.targetPath = join(option.tempDir!, option.targetName)
+            option.targetPath = join(ctx.store.tempDir!, option.targetName)
 
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
               args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
               memory_MB: option.meterOption.memoryLimit! / 8 / 1024 / 1024,
               timeout_ms: option.meterOption.timeLimit!,
-              bindMount: [{ source: option.tempDir!, mode: 'rw' }],
-              cwd: option.tempDir!
+              bindMount: [{ source: ctx.store.tempDir!, mode: 'rw' }],
+              cwd: ctx.store.tempDir!
             })
 
             task.start()
@@ -133,7 +132,7 @@ export class CommonPipelineProvider {
             ctx.store.exit_code = exit_code
             ctx.store.measure = measure!
             ctx.store.targetPath = option.targetPath
-            ctx.store.tempDir = option.tempDir!
+            ctx.store.tempDir = ctx.store.tempDir!
           },
           { name: 'compile-jailed' }
         )

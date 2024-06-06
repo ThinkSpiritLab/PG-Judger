@@ -45,9 +45,7 @@ type PipelineTaskData<In = any, Out = any> = {
 type PipelineCtx<Store = {}> = {
   tasks: PipelineTaskData[]
   pipeline: Pipeline
-  store: Store & {
-    [key: string]: any
-  }
+  store: Store
   get(name: string): PipelineTaskData | undefined
 }
 

@@ -9,9 +9,9 @@ import { MeterException } from '../meter/meter.exception'
 export class CompileService {
   constructor(
     private readonly pipelineService: PipelineService
-  ) {}
+  ) { }
 
-  async compile(execInfo: ExecutableInfo, initStore?: Record<string,any>, option_override?: Record<string,any>) { //TODO add this
+  async compile(execInfo: ExecutableInfo, initStore?: Record<string, any>, option_override?: Record<string, any>) { //TODO add this
     const languageConfiguration = searchLangConfigByExecInfo(execInfo)
 
     if (!languageConfiguration) {
@@ -37,7 +37,7 @@ export class CompileService {
     try {
       return await pipeline.run({
         source: execInfo.src.content,
-        ...initStore
+        ...initStore //TODO refactor
       }) //TODO add validation
     } catch (error) {
       if (error instanceof PipelineRuntimeError) {
