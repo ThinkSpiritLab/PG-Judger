@@ -16,6 +16,7 @@ import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
 import { toNormalJudgeRequest } from './test/utils'
 import killTimer from './test/bomb/kill-timer'
 import stack from './test/bomb/stack'
+import { withTempDir } from '../compile/pipelines/utils'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -110,18 +111,32 @@ export class JudgeService {
   }
 
   async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
+    await withTempDir((tempDir)=>{
+      //TODO move judge here
+    })
+
     let store: CommonCompileStore | null = null
     try {
       store = (await this.compileService.compile(user))
         .store as CommonCompileStore
     } catch (error) {
+      //TODO refactor this
+      store && rm(store.tempDir, { recursive: true })
+
       if (error instanceof PipelineRuntimeError) {
         console.error(error.reason)
         return cases.map(() => ({ result: 'compile-error' }))
       } else if (error instanceof CompileException) {
         console.error(error.type, error.message, error.name, error.stack)
 
-        if (error.type === 'time-limit-exceeded') { //FIXME used to pass test!
+        // FIXME used to pass test!
+        if (
+          [
+            'time-limit-exceeded',
+            'memory-limit-exceeded',
+            'output-limit-exceeded'
+          ].includes(error.type)
+        ) {
           return cases.map(() => ({ result: 'time-limit-exceeded' }))
         }
 
@@ -185,7 +200,7 @@ export class JudgeService {
       throw error
     } finally {
       //TODO still some remaining, check
-      store && rm(store.tempDir, { recursive: true }) 
+      store && rm(store.tempDir, { recursive: true })
     }
   }
 

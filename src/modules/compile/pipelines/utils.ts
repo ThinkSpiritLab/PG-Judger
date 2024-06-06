@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Fri May 31 2024                                              *
+ * Last Modified: Thu Jun 06 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -14,13 +14,16 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-import * as fp from 'fs/promises' 
+import * as fp from 'fs/promises'
+import { TMP_DIR_PREFIX } from '../constant'
+import { join } from 'lodash'
+import { tmpdir } from 'os'
+import { isPromise } from 'util/types'
 
 /**
  * Task factory
  */
 export namespace T {
-
   export function exists(path: string) {
     return () => fp.access(path)
   }
@@ -80,5 +83,27 @@ export namespace T {
   export function symlink(target: string, path: string) {
     return () => fp.symlink(target, path)
   }
+}
 
+export async function getTempDir() {
+  return await fp.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX))
+}
+
+export async function withTempDir<T>(
+  fn: (tempDir: string) => T
+) {
+  let _tempDir: string | null = null
+
+  const cleanup = () => {
+    if (_tempDir) {
+      fp.rmdir(_tempDir, { recursive: true })
+    }
+  }
+
+  try {
+    _tempDir = await getTempDir()
+    return await fn(_tempDir)
+  } finally {
+    cleanup()
+  }
 }

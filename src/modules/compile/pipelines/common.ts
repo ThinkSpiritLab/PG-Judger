@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Wed Jun 05 2024                                              *
+ * Last Modified: Thu Jun 06 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -86,7 +86,7 @@ export class CommonPipelineProvider {
   @RegisterPipeline('common-compile')
   commonCompilePipelineFactory(option: CommonCompileOption) {
     return Pipeline.create<CommonCompileStore>(({ pipe, ctx }) => {
-      return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), {
+      return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), { //TODO 将TMPDIR 创建/删除的控制权交给上层处理
         name: 'create-temp-dir'
       })
         .pipe(

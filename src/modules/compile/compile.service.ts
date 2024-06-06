@@ -17,7 +17,7 @@ export class CompileService {
     if (!languageConfiguration) {
       throw new CompileException(
         'Bad ExecutableInfo: Unknown Language',
-        'UNKNOWN'
+        'UNKNOWN_LANG'
       )
     }
     const { configs } = languageConfiguration
