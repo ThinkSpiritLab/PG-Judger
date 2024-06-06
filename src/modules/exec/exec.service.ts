@@ -129,7 +129,7 @@ export class ExecService {
     stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit'>) {
-    while (stdio.length < 3) stdio.push('pipe')
+    while (stdio.length < 3) stdio.push('ignore')
     stdio.push('pipe') // append a pipe for meter
 
     const meter: MeterSpawnOption = {

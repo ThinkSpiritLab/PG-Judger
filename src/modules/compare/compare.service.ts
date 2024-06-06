@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Wed Jun 05 2024                                              *
+ * Last Modified: Thu Jun 06 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -77,6 +77,7 @@ export class CompareService {
       //TODO check compare meter here
 
       if (!judgeResult) {
+        console.warn('no output from compare')
         throw new PipelineRuntimeError('no output from compare', 'runtime-error') //FIXME not a pipeline error
       }
 
@@ -84,6 +85,7 @@ export class CompareService {
 
       return compareResultMap[judgeResult.trim() as 'AC' | 'WA' | 'PE'] 
     } catch (error) {
+      console.error('Error in compare:', error)
       throw error
     } finally {
       cmp?.process?.kill()

@@ -92,7 +92,7 @@ type JudgeRequest =
   | InteractiveJudgeRequest
 const compileErrorSubtype = [
   'time-limit-exceeded',
-  'memory-limit-exceeded',
+  'memory-limit-exceeded'
   // 'output-limit-exceeded' //TODO add this
 ]
 @Injectable()
@@ -101,9 +101,10 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    // setTimeout(async () => {
-    //   await this.judge(toNormalJudgeRequest(AC, 'cpp')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
-    // }, 600)
+    setTimeout(() => {
+      this.judge(toNormalJudgeRequest(AC, 'cpp')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
+      this.judge(toNormalJudgeRequest(AC, 'cpp'))
+    }, 600)
   }
 
   async judge(req: JudgeRequest) {
@@ -133,13 +134,24 @@ export class JudgeService {
             'common-run-testcase'
           )
 
-          const { limit: { runtime } } = user
-          const judgePipeline = configureJudgePipeline(
-            { judgeFactory, runtime })
+          const {
+            limit: { runtime }
+          } = user
+          const judgePipeline = configureJudgePipeline({
+            judgeFactory,
+            runtime
+          })
 
           try {
             for (const testcase of cases) {
-              await this.runTestcase(judgePipeline, store, testcase, judgeResult, runtime, policy)
+              await this.runTestcase(
+                judgePipeline,
+                store,
+                testcase,
+                judgeResult,
+                runtime,
+                policy
+              )
             }
           } catch (error) {
             if (error instanceof TestcaseFuseException) {
@@ -164,7 +176,12 @@ export class JudgeService {
     })
   }
 
-  private async compile(store: CommonCompileStore | null, user: ExecutableInfo, tempDir: string, judgeResult: JudgeResultBuilder) {
+  private async compile(
+    store: CommonCompileStore | null,
+    user: ExecutableInfo,
+    tempDir: string,
+    judgeResult: JudgeResultBuilder
+  ) {
     try {
       store = (await this.compileService.compile(user, { tempDir }))
         .store as CommonCompileStore
@@ -174,7 +191,8 @@ export class JudgeService {
         judgeResult.fill({ result: 'compile-error' })
         throw new JudgeInterruptedException()
       } else if (error instanceof CompileException) {
-        if (compileErrorSubtype.includes(error.type)) { // FIXME used to pass test!
+        if (compileErrorSubtype.includes(error.type)) {
+          // FIXME used to pass test!
           judgeResult.fill({ result: error.type })
         } else {
           judgeResult.fill({ result: 'compile-error' })
@@ -186,7 +204,14 @@ export class JudgeService {
     return store
   }
 
-  private async runTestcase(judgePipeline: Pipeline<any>, store: CommonCompileStore, testcase: TestCase, judgeResult: JudgeResultBuilder, runtime: { memory: number; cpuTime: number; output: number }, policy: TestPolicy) {
+  private async runTestcase(
+    judgePipeline: Pipeline<any>,
+    store: CommonCompileStore,
+    testcase: TestCase,
+    judgeResult: JudgeResultBuilder,
+    runtime: { memory: number; cpuTime: number; output: number },
+    policy: TestPolicy
+  ) {
     try {
       await runJudgerPipeline(judgePipeline, store, testcase, judgeResult)
     } catch (error) {
@@ -247,8 +272,13 @@ export class JudgeService {
   }
 }
 
-function configureJudgePipeline(
-  { judgeFactory, runtime }: { judgeFactory: (...args: any[]) => Pipeline<any>; runtime: { memory: number; cpuTime: number; output: number } }) {
+function configureJudgePipeline({
+  judgeFactory,
+  runtime
+}: {
+  judgeFactory: (...args: any[]) => Pipeline<any>
+  runtime: { memory: number; cpuTime: number; output: number }
+}) {
   return judgeFactory({
     jailOption: {
       timeLimit_s: runtime.cpuTime,
@@ -279,9 +309,7 @@ async function runJudgerPipeline(
   testResult.push({ measure: user_measure!, result: result! })
 }
 
-function handleUnknownError(
-  testResult: JudgeResultBuilder
-) {
+function handleUnknownError(testResult: JudgeResultBuilder) {
   testResult.push({ result: 'UNKNOWN' })
 }
 
@@ -313,7 +341,6 @@ function handleLimitError(
     }
   }
 }
-
 
 class TestcaseFuseException extends Error {
   constructor() {

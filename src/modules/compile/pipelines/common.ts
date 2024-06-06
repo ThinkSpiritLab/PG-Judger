@@ -35,8 +35,9 @@ import { TestCase, TestPolicy } from '@/modules/judge/judge.service'
 import { CompareResult, CompareService } from '../../compare/compare.service'
 import { PipelineRuntimeError } from '@/modules/pipeline/pipeline.exception'
 import { JudgeException } from '@/modules/judge/judge.exceptions'
+import { Object } from 'ts-toolbelt'
 
-export type CommonCompileOption = {
+export type CommonCompileOption = Object.Readonly<{
   skip: boolean
   compilerExec: string
   compilerArgs: string[]
@@ -44,8 +45,7 @@ export type CommonCompileOption = {
   meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
   sourceName: string
   targetName: string
-  targetPath?: string
-}
+}>
 
 export type CommonCompileStore = {
   source: string //TODO split prerun and runtime variables
@@ -55,11 +55,10 @@ export type CommonCompileStore = {
   exit_code: number
   measure: MeterResult
 }
-
-export type CommonJudgeOption = {
+export type CommonJudgeOption = Object.Readonly<{
   jailOption: JailSpawnOption //TODO remove legacy option
   meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
-}
+}>
 
 export type CommonJudgeStore = {
   targetPath: string
@@ -100,11 +99,11 @@ export class CommonPipelineProvider {
         )
         .pipe(
           async (srcPath) => {
-            option.targetPath = join(ctx.store.tempDir!, option.targetName)
+            ctx.store.targetPath = join(ctx.store.tempDir!, option.targetName)
 
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
-              args: [...option.compilerArgs, srcPath, '-o', option.targetPath],
+              args: [...option.compilerArgs, srcPath, '-o', ctx.store.targetPath],
               memory_MB: option.meterOption.memoryLimit! / 8 / 1024 / 1024,
               timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: ctx.store.tempDir!, mode: 'rw' }],
@@ -130,7 +129,6 @@ export class CommonPipelineProvider {
 
             ctx.store.exit_code = exit_code
             ctx.store.measure = measure!
-            ctx.store.targetPath = option.targetPath
             ctx.store.tempDir = ctx.store.tempDir!
           },
           { name: 'compile-jailed' }
@@ -175,7 +173,7 @@ export class CommonPipelineProvider {
                 args: [],
                 memory_MB: option.meterOption.memoryLimit || 1024, //TODO remove magic numbers
                 timeout_ms: option.meterOption.timeLimit || 2000,
-                stdio: [caseInputFD.fd, userOutputFD.fd, 'pipe', 'pipe'],
+                stdio: [caseInputFD.fd, userOutputFD.fd, 'ignore', 'ignore'],
                 cwd: ctx.store.tempDir,
                 bindMount: [{ source: ctx.store.tempDir, mode: 'rw' }]
               })
@@ -188,6 +186,7 @@ export class CommonPipelineProvider {
               ])
 
               if (!measure) {
+                console.warn('measure is not set')
                 throw new PipelineRuntimeError(
                   'measure failed',
                   'runtime-error'
@@ -195,6 +194,8 @@ export class CommonPipelineProvider {
               }
 
               if (measure.returnCode !== 0) {
+                // console.warn('user program failed')
+
                 // throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
                 testMeterOrThrow(measure, {
                   cpuTime: option.meterOption.timeLimit!,
