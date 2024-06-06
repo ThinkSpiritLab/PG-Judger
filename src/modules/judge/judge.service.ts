@@ -119,51 +119,66 @@ export class JudgeService {
     await withTempDir(async (tempDir) => {
       const judgeResult = new JudgeResultBuilder(cases)
       let store: CommonCompileStore | null = null
-      // compile
-      try {
-        store = (await this.compileService.compile(user, { tempDir }))
-          .store as CommonCompileStore
-      } catch (error) {
-        //TODO refactor this
-        if (error instanceof PipelineRuntimeError) {
-          return judgeResult.fill({ result: 'compile-error' })
-        } else if (error instanceof CompileException) {
-          if (compileErrorSubtype.includes(error.type)) { // FIXME used to pass test!
-            return judgeResult.fill({ result: error.type })
-          } else {
-            return judgeResult.fill({ result: 'compile-error' })
-          }
-        }
-        throw error
-      }
-      // run testcases
-      try {
-        const judgeFactory = this.pipelineService.getPipeline(
-          'common-run-testcase'
-        )
 
-        const { limit: { runtime } } = user
-        const judgePipeline = configureJudgePipeline(
-          { judgeFactory, runtime })
-
+      try {
+        // compile
+        store = await this.compile(store, user, tempDir, judgeResult)
+        // run testcases
         try {
-          for (const testcase of cases) {
-            await this.runTestcase(judgePipeline, store, testcase, judgeResult, runtime, policy)
+          const judgeFactory = this.pipelineService.getPipeline(
+            'common-run-testcase'
+          )
+
+          const { limit: { runtime } } = user
+          const judgePipeline = configureJudgePipeline(
+            { judgeFactory, runtime })
+
+          try {
+            for (const testcase of cases) {
+              await this.runTestcase(judgePipeline, store, testcase, judgeResult, runtime, policy)
+            }
+          } catch (error) {
+            if (error instanceof TestcaseFuseException) {
+              return judgeResult.results
+            }
+            throw error
           }
+
+          console.log(judgeResult.results)
+
+          return judgeResult
         } catch (error) {
-          if (error instanceof TestcaseFuseException) {
-            return judgeResult.results
-          }
           throw error
         }
-
-        console.log(judgeResult.results)
-
-        return judgeResult
       } catch (error) {
+        if (error instanceof JudgeInterruptedException) {
+          return judgeResult.results
+        }
         throw error
       }
     })
+  }
+
+  private async compile(store: CommonCompileStore | null, user: ExecutableInfo, tempDir: string, judgeResult: JudgeResultBuilder) {
+    try {
+      store = (await this.compileService.compile(user, { tempDir }))
+        .store as CommonCompileStore
+    } catch (error) {
+      //TODO refactor this
+      if (error instanceof PipelineRuntimeError) {
+        judgeResult.fill({ result: 'compile-error' })
+        throw new JudgeInterruptedException()
+      } else if (error instanceof CompileException) {
+        if (compileErrorSubtype.includes(error.type)) { // FIXME used to pass test!
+          judgeResult.fill({ result: error.type })
+        } else {
+          judgeResult.fill({ result: 'compile-error' })
+        }
+        throw new JudgeInterruptedException()
+      }
+      throw error
+    }
+    return store
   }
 
   private async runTestcase(judgePipeline: Pipeline<any>, store: CommonCompileStore, testcase: TestCase, judgeResult: JudgeResultBuilder, runtime: { memory: number; cpuTime: number; output: number }, policy: TestPolicy) {
@@ -298,5 +313,11 @@ function handleLimitError(
 class TestcaseFuseException extends Error {
   constructor() {
     super('Fuse')
+  }
+}
+
+class JudgeInterruptedException extends Error {
+  constructor() {
+    super('Interrupted')
   }
 }
