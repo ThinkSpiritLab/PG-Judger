@@ -88,7 +88,6 @@ export class CommonPipelineProvider {
       // return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), { //TODO 将TMPDIR 创建/删除的控制权交给上层处理
       //   name: 'create-temp-dir'
       // })
-
       return pipe(() => ctx.store.tempDir)
         .pipe(
           async (path) => {
@@ -136,11 +135,6 @@ export class CommonPipelineProvider {
           },
           { name: 'compile-jailed' }
         )
-        .catch(async () => {
-          if (ctx.store.tempDir) {
-            await rm(ctx.store.tempDir, { recursive: true })
-          }
-        })
     })
   }
 

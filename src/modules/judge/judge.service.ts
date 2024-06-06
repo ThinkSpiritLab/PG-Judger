@@ -17,6 +17,10 @@ import stack from './test/bomb/stack'
 import { withTempDir } from '../compile/pipelines/utils'
 import { ThrowUtils } from '@/utils/throw'
 import { JudgeResultBuilder } from './judge-result'
+import AC from './test/cpp/AC'
+import CE from './test/cpp/CE'
+import TLE from './test/cpp/TLE'
+import MLE from './test/cpp/MLE'
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -97,26 +101,26 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    setTimeout(() => {
-      this.normalJudge(toNormalJudgeRequest(stack, 'c')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
-    }, 600)
+    // setTimeout(async () => {
+    //   await this.judge(toNormalJudgeRequest(AC, 'cpp')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
+    // }, 600)
   }
 
   async judge(req: JudgeRequest) {
     switch (req.type) {
       case 'normal':
-        return this.normalJudge(req)
+        return await this.normalJudge(req)
       case 'spj':
-        return this.spjJudge(req)
+        return await this.spjJudge(req)
       case 'interactive':
-        return this.interactiveJudge(req)
+        return await this.interactiveJudge(req)
     }
 
     throw new Error('Unknown judge request type')
   }
 
   async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
-    await withTempDir(async (tempDir) => {
+    return await withTempDir(async (tempDir) => {
       const judgeResult = new JudgeResultBuilder(cases)
       let store: CommonCompileStore | null = null
 
@@ -146,12 +150,13 @@ export class JudgeService {
 
           console.log(judgeResult.results)
 
-          return judgeResult
+          return judgeResult.results
         } catch (error) {
           throw error
         }
       } catch (error) {
         if (error instanceof JudgeInterruptedException) {
+          console.warn('Judge interrupted, results:', judgeResult.results)
           return judgeResult.results
         }
         throw error
@@ -192,6 +197,7 @@ export class JudgeService {
       } else {
         console.error(error)
         handleUnknownError(judgeResult)
+        throw error
       }
 
       if (policy === 'fuse') {
@@ -199,7 +205,6 @@ export class JudgeService {
       } else if (policy === 'all') {
         // do nothing
       }
-      throw error
     }
   }
 
