@@ -11,7 +11,7 @@ export class CompileService {
     private readonly pipelineService: PipelineService
   ) {}
 
-  async compile(execInfo: ExecutableInfo) {
+  async compile(execInfo: ExecutableInfo, initStore?: Record<string,any>, option_override?: Record<string,any>) { //TODO add this
     const languageConfiguration = searchLangConfigByExecInfo(execInfo)
 
     if (!languageConfiguration) {
@@ -36,7 +36,8 @@ export class CompileService {
 
     try {
       return await pipeline.run({
-        source: execInfo.src.content
+        source: execInfo.src.content,
+        ...initStore
       }) //TODO add validation
     } catch (error) {
       if (error instanceof PipelineRuntimeError) {

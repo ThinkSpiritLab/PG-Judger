@@ -44,7 +44,7 @@ export type CommonCompileOption = {
   meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
   sourceName: string
   targetName: string
-  tempDir?: string
+  tempDir: string
   targetPath?: string
 }
 
@@ -86,9 +86,11 @@ export class CommonPipelineProvider {
   @RegisterPipeline('common-compile')
   commonCompilePipelineFactory(option: CommonCompileOption) {
     return Pipeline.create<CommonCompileStore>(({ pipe, ctx }) => {
-      return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), { //TODO 将TMPDIR 创建/删除的控制权交给上层处理
-        name: 'create-temp-dir'
-      })
+      // return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), { //TODO 将TMPDIR 创建/删除的控制权交给上层处理
+      //   name: 'create-temp-dir'
+      // })
+
+      return pipe(() => option.tempDir)
         .pipe(
           async (path) => {
             const file = join(path, option.sourceName)
@@ -108,7 +110,7 @@ export class CommonPipelineProvider {
               memory_MB: option.meterOption.memoryLimit! / 8 / 1024 / 1024,
               timeout_ms: option.meterOption.timeLimit!,
               bindMount: [{ source: option.tempDir!, mode: 'rw' }],
-              cwd: option.tempDir!,
+              cwd: option.tempDir!
             })
 
             task.start()

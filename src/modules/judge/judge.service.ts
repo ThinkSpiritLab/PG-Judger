@@ -92,9 +92,9 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    // setTimeout(() => {
-    //   this.normalJudge(toNormalJudgeRequest(stack, 'c')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
-    // }, 600)
+    setTimeout(() => {
+      this.normalJudge(toNormalJudgeRequest(stack, 'c')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
+    }, 600)
   }
 
   async judge(req: JudgeRequest) {
@@ -111,97 +111,95 @@ export class JudgeService {
   }
 
   async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
-    await withTempDir((tempDir)=>{
-      //TODO move judge here
+    await withTempDir(async (tempDir)=>{
+      let store: CommonCompileStore | null = null
+      try {
+        store = (await this.compileService.compile(user, { tempDir }))
+          .store as CommonCompileStore
+      } catch (error) {
+        //TODO refactor this
+        store && rm(store.tempDir, { recursive: true })
+  
+        if (error instanceof PipelineRuntimeError) {
+          console.error(error.reason)
+          return cases.map(() => ({ result: 'compile-error' }))
+        } else if (error instanceof CompileException) {
+          console.error(error.type, error.message, error.name, error.stack)
+  
+          // FIXME used to pass test!
+          if (
+            [
+              'time-limit-exceeded',
+              'memory-limit-exceeded',
+              'output-limit-exceeded'
+            ].includes(error.type)
+          ) {
+            return cases.map(() => ({ result: 'time-limit-exceeded' }))
+          }
+  
+          return cases.map(() => ({ result: 'compile-error' }))
+        }
+      }
+  
+      if (store == null) {
+        throw new Error('store is null')
+      }
+  
+      try {
+        const judgePipelineFactory = this.pipelineService.getPipeline(
+          'common-run-testcase'
+        )
+  
+        const {
+          limit: { runtime }
+        } = user
+        const judgePipeline = configureJudgePipeline(
+          judgePipelineFactory,
+          user.limit.runtime
+        )
+  
+        const testResult: {
+          measure?: MeterResult
+          result: string
+        }[] = [] as any
+        for (const testcase of cases) {
+          try {
+            await runJudgerPipeline(judgePipeline, store, testcase, testResult)
+          } catch (error) {
+            if (error instanceof JudgeException) {
+              // WA, PE, RE
+              handleJudgeException(testResult, error)
+            } else if (error instanceof MeterException) {
+              // TLE, MLE, OLE
+              handleLimitError(error, runtime, testResult)
+            } else {
+              console.error(error)
+              handleUnknownError(testResult)
+            }
+  
+            if (policy === 'fuse') {
+              break
+            } else if (policy === 'all') {
+              continue
+            }
+  
+            throw error
+          }
+        }
+  
+        testResult.push(
+          ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
+        )
+        console.log(testResult)
+  
+        return testResult
+      } catch (error) {
+        throw error
+      } finally {
+        //TODO still some remaining, check
+        store && rm(store.tempDir, { recursive: true })
+      }
     })
-
-    let store: CommonCompileStore | null = null
-    try {
-      store = (await this.compileService.compile(user))
-        .store as CommonCompileStore
-    } catch (error) {
-      //TODO refactor this
-      store && rm(store.tempDir, { recursive: true })
-
-      if (error instanceof PipelineRuntimeError) {
-        console.error(error.reason)
-        return cases.map(() => ({ result: 'compile-error' }))
-      } else if (error instanceof CompileException) {
-        console.error(error.type, error.message, error.name, error.stack)
-
-        // FIXME used to pass test!
-        if (
-          [
-            'time-limit-exceeded',
-            'memory-limit-exceeded',
-            'output-limit-exceeded'
-          ].includes(error.type)
-        ) {
-          return cases.map(() => ({ result: 'time-limit-exceeded' }))
-        }
-
-        return cases.map(() => ({ result: 'compile-error' }))
-      }
-    }
-
-    if (store == null) {
-      throw new Error('store is null')
-    }
-
-    try {
-      const judgePipelineFactory = this.pipelineService.getPipeline(
-        'common-run-testcase'
-      )
-
-      const {
-        limit: { runtime }
-      } = user
-      const judgePipeline = configureJudgePipeline(
-        judgePipelineFactory,
-        user.limit.runtime
-      )
-
-      const testResult: {
-        measure?: MeterResult
-        result: string
-      }[] = [] as any
-      for (const testcase of cases) {
-        try {
-          await runJudgerPipeline(judgePipeline, store, testcase, testResult)
-        } catch (error) {
-          if (error instanceof JudgeException) {
-            // WA, PE, RE
-            handleJudgeException(testResult, error)
-          } else if (error instanceof MeterException) {
-            // TLE, MLE, OLE
-            handleLimitError(error, runtime, testResult)
-          } else {
-            console.error(error)
-            handleUnknownError(testResult)
-          }
-
-          if (policy === 'fuse') {
-            break
-          } else if (policy === 'all') {
-            continue
-          }
-
-          throw error
-        }
-      }
-
-      testResult.push(
-        ...Array(cases.length - testResult.length).fill({ result: 'UNJUDGED' })
-      )
-      console.log(testResult)
-
-      return testResult
-    } catch (error) {
-      throw error
-    } finally {
-      //TODO still some remaining, check
-      store && rm(store.tempDir, { recursive: true })
-    }
   }
 
   async spjJudge(req: SpjJudgeRequest) {

@@ -16,9 +16,8 @@
 
 import * as fp from 'fs/promises'
 import { TMP_DIR_PREFIX } from '../constant'
-import { join } from 'lodash'
 import { tmpdir } from 'os'
-import { isPromise } from 'util/types'
+import { join } from 'path'
 
 /**
  * Task factory
@@ -49,7 +48,7 @@ export namespace T {
   }
 
   export function rmdir(path: string) {
-    return () => fp.rmdir(path, { recursive: true })
+    return () => fp.rm(path, { recursive: true })
   }
 
   export function copyFile(src: string, dest: string) {
@@ -96,7 +95,7 @@ export async function withTempDir<T>(
 
   const cleanup = () => {
     if (_tempDir) {
-      fp.rmdir(_tempDir, { recursive: true })
+      fp.rm(_tempDir, { recursive: true })
     }
   }
 
