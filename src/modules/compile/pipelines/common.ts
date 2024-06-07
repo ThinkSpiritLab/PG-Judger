@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Thu Jun 06 2024                                              *
+ * Last Modified: Fri Jun 07 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -75,18 +75,12 @@ export type CommonJudgeStore = {
 export class CommonPipelineProvider {
   constructor(
     private readonly execService: ExecService,
-    // private readonly legacyMeterService: MeterService,
-    // private readonly legacyJailService: LegacyJailService,
-    // private readonly configService: ConfigService,
     private readonly compareService: CompareService
   ) {}
 
   @RegisterPipeline('common-compile')
   commonCompilePipelineFactory(option: CommonCompileOption) {
     return Pipeline.create<CommonCompileStore>(({ pipe, ctx }) => {
-      // return pipe(T.mkdtemp(join(tmpdir(), TMP_DIR_PREFIX)), { //TODO 将TMPDIR 创建/删除的控制权交给上层处理
-      //   name: 'create-temp-dir'
-      // })
       return pipe(() => ctx.store.tempDir)
         .pipe(
           async (path) => {
