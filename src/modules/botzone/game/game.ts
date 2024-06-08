@@ -25,3 +25,15 @@ export class Game extends EventEmitter {
     super()
   }
 }
+
+
+export class GameController {
+  constructor(
+    private readonly game: Game,
+  ) {}
+
+  getPlayers() {
+    return this.game.playerMap.values()
+  }
+  
+}
