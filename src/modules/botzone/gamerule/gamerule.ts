@@ -1,10 +1,8 @@
-import EventEmitter from 'node:events'
-import { IPlayer, LocalPlayer } from '../player/player'
 import { MeteredExecuable } from '@/modules/exec/executable'
-import { exec } from 'child_process'
-import { SerializableObject } from '../serialize'
-import { PlayerID } from '../../../../../BP-Judger/src/game/players/IPlayer';
+import { EventEmitter } from 'node:events'
 import { GameController } from '../game/game'
+import { IPlayer, LocalPlayer, PlayerID } from '../player/player'
+import { SerializableObject } from '../serialize'
 /*
  * File: gamerule.ts                                                           *
  * Project: pg-judger                                                          *
@@ -34,16 +32,21 @@ export interface GameRule {
 
   onGameStart(): void
 
-  checkPlayerCanJoin(player: IPlayer): boolean
+  checkPlayerCanJoin(player: IPlayer): Promise<boolean>
 
-  checkGameCanStart(players: IPlayer[]): boolean
+  checkGameCanStart(players: IPlayer[]): Promise<boolean>
 
-  checkGameShallEnd(players: IPlayer[]): boolean
+  checkGameShallEnd(players: IPlayer[]): Promise<boolean>
 
-  requestPlayerMove(player: IPlayer): PlayerID
+  getNextPlayerId(): Promise<PlayerID>
 
-  validatePlayerMove(player: IPlayer, move: SerializableObject): boolean
-  onPlayerMoveReceived(player: IPlayer, move: SerializableObject): SerializableObject
+  createQuery(player: PlayerID): Promise<SerializableObject>
+
+  validatePlayerMove(
+    player: IPlayer,
+    move: SerializableObject
+  ): Promise<boolean>
+  onPlayerMoveReceived(player: IPlayer, move: SerializableObject): Promise<void>
   onPlayerMoveTimeout(player: IPlayer, move: SerializableObject): void
 
   applyPlayerMove(player: IPlayer, move: SerializableObject): void
@@ -53,13 +56,24 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
   id: string
   exec: MeteredExecuable
   gameController: GameController
+  winner: IPlayer
 
-  constructor(id: string, exec: MeteredExecuable, gameController: GameController) {
+  constructor(
+    id: string,
+    exec: MeteredExecuable,
+    gameController: GameController
+  ) {
     super()
 
     this.id = id
     this.exec = exec
     this.gameController = gameController
+  }
+  createQuery(player: string): Promise<SerializableObject> {
+    throw new Error('Method not implemented.')
+  }
+  onGameStart(): void {
+    throw new Error('Method not implemented.')
   }
 
   getMeta(): GameMeta {
@@ -70,33 +84,33 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
     }
   }
 
-  onGameStart() {}
+  onGameStarts() {}
 
   onPlayerMove() {}
 
-  checkPlayerCanJoin(player: IPlayer): boolean {
+  async checkPlayerCanJoin(player: IPlayer) {
     return true
   }
 
-  checkGameCanStart(): boolean {
+  async checkGameCanStart() {
     return true
   }
 
-  checkGameShallEnd(): boolean {
-    return false
+  async checkGameShallEnd() {
+    return this.winner !== undefined
   }
 
-  requestPlayerMove(player: IPlayer): PlayerID {
-    throw new Error('Method not implemented.')
+  async getNextPlayerId() {
+    return this.gameController.getPlayers().next().value.id as PlayerID
   }
 
-  onPlayerMoveReceived(player: IPlayer): SerializableObject {
+  async onPlayerMoveReceived(player: IPlayer): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
   onPlayerMoveTimeout(player: IPlayer): void {}
 
-  validatePlayerMove(player: IPlayer): boolean {
+  async validatePlayerMove(player: IPlayer) {
     return true
   }
 
@@ -118,53 +132,60 @@ export class GuessNumberSingleGamerule
     }
   }
 
-  onGameStart(): void {
+  onGameStart() {
     this.ctx.target = Math.floor(Math.random() * 100)
     this.ctx.history = []
+    this.ctx.last_guess = new Map()
+
+    console.log('target', this.ctx.target)
   }
 
-  checkPlayerCanJoin(player: IPlayer): boolean {
+  async checkPlayerCanJoin(player: IPlayer) {
     return true
   }
-  checkGameCanStart(players: IPlayer[]): boolean {
+  async checkGameCanStart(players: IPlayer[]) {
     return players.length === 1
   }
-  checkGameShallEnd(players: IPlayer[]): boolean {
+  async checkGameShallEnd(players: IPlayer[]) {
     // NOT USED, we throw an exception instead
     return false
   }
-  requestPlayerMove(): PlayerID {
+  async getNextPlayerId(): Promise<PlayerID> {
     return this.gameController.getPlayers().next().value.id
   }
-  onPlayerMoveReceived(player: IPlayer, move: SerializableObject): SerializableObject {
-    const guess = move.guess
-    if (guess === this.ctx.target) {
-      throw new GameEndException()
-    } else if (guess < this.ctx.target) {
-      return {
-        hint: 'larger'
-      }
-    } else {
-      return {
-        hint: 'smaller'
-      }
-    }
+  async onPlayerMoveReceived(player: IPlayer, move: SerializableObject) {
+    const { guess } = move as { guess: number }
+    this.ctx.last_guess.set(player.id, guess)
   }
-  onPlayerMoveTimeout(player: IPlayer, move: SerializableObject): void {
+  async onPlayerMoveTimeout(player: IPlayer, move: SerializableObject) {
     throw new Error('Method not implemented.')
   }
-  validatePlayerMove(player: IPlayer, move: SerializableObject): boolean {
+  async validatePlayerMove(player: IPlayer, move: SerializableObject) {
     return true //TODO validate
   }
-  applyPlayerMove(player: IPlayer, move: SerializableObject): void {
+  async applyPlayerMove(player: IPlayer, move: SerializableObject) {
     this.ctx.history.push({
       by: player.id,
       move
     })
   }
+
+  async createQuery(player: string): Promise<SerializableObject> {
+    if (this.ctx.last_guess.has(player)) {
+      if (this.ctx.last_guess.get(player) === this.ctx.target) {
+        throw new GameEndException()
+      } else if (this.ctx.last_guess.get(player) < this.ctx.target) {
+        return { hint: 'larger' }
+      } else {
+        return { hint: 'smaller' }
+      }
+    } else {
+      return { hint: 'begin' }
+    }
+  }
 }
 
-class GameEndException extends Error {
+export class GameEndException extends Error {
   constructor() {
     super('Game end')
   }

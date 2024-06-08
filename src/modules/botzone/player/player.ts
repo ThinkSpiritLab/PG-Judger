@@ -18,7 +18,7 @@ import { EventEmitter } from 'node:events';
 import { SerializableObject, serialize, tryDeserialize, trySerialize } from "../serialize";
 import { MeteredExecuable } from "@/modules/exec/executable";
 
-type PlayerID = string
+export type PlayerID = string
 type PlayerMoveRequest = SerializableObject
 type PlayerMoveResponse = SerializableObject
 
@@ -73,5 +73,34 @@ export class LocalPlayer extends EventEmitter implements IPlayer {
 class PlayerInvalidMoveError extends Error {
   constructor() {
     super('Invalid move')
+  }
+}
+
+export class GuessNumberSinglePlayer implements IPlayer {
+  id = '114514'
+
+  left = 0
+  right = 20000
+
+  move(req: {
+    hint: 'smaller' | 'larger' | 'begin'
+  }): Promise<SerializableObject> {
+    console.log(req)
+    if (req.hint === 'begin') {
+      console.log(`begin`)
+      return Promise.resolve({
+        guess: (this.left + this.right) / 2
+      })
+    }
+
+    if (req.hint === 'smaller') {
+      this.right = (this.left + this.right) / 2
+    } else {
+      this.left = (this.left + this.right) / 2
+    }
+    console.log(this.left, this.right, `guessed: ${(this.left + this.right) / 2}`)
+    return Promise.resolve({
+      guess: Math.floor((this.left + this.right) / 2)
+    })
   }
 }

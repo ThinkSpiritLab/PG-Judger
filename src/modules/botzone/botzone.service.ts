@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common'
 import { ExecService } from '../exec/exec.service'
-import { LocalPlayer } from './player/player'
+import { GuessNumberSinglePlayer, LocalPlayer } from './player/player'
+import { GuessNumberSingleGamerule } from './gamerule/gamerule'
+import { Game } from './game/game'
 
 @Injectable()
 export class BotzoneService {
   constructor(private readonly execService: ExecService) {
-    this.test()
+    this.test2().then(() => {
+      console.log('done')
+    }).catch((e) => {
+      console.error(e)
+    })
   }
 
   async test() {
@@ -40,5 +46,15 @@ export class BotzoneService {
     console.log(resp2)
 
 
+  }
+
+  async test2() {
+    const player = new GuessNumberSinglePlayer()
+    const gamerule = new GuessNumberSingleGamerule()
+    const game = new Game(gamerule)
+
+    game.addPlayer(player)
+
+    await game.start()
   }
 }
