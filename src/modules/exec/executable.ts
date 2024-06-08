@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Thu Jun 06 2024                                              *
+ * Last Modified: Sat Jun 08 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -16,7 +16,11 @@
 
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
-import { CompleteStdioOptions, MeterResult, testMeterOrThrow } from '../meter/meter.service'
+import {
+  CompleteStdioOptions,
+  MeterResult,
+  testMeterOrThrow
+} from '../meter/meter.service'
 import { readStream } from '@/utils/io'
 import { Readable, Writable } from 'stream'
 import { MeterException } from '../meter/meter.exception'
@@ -26,11 +30,12 @@ class Executable extends EventEmitter {
   private _args: string[]
   private childProcess: ChildProcess | null = null
   private _stdio: CompleteStdioOptions
+  private stdoutBuffer: Buffer = Buffer.alloc(0)
+  private stderrBuffer: Buffer = Buffer.alloc(0)
 
   public getExitAwaiter() {
     return new Promise<number>((resolve, reject) => {
       if (!this.childProcess) {
-        // this works fine
         console.warn('Process not found, did you forget to start it?')
         reject(-1)
         return
@@ -71,10 +76,16 @@ class Executable extends EventEmitter {
     }
 
     this.childProcess.stdout?.on('data', (data: Buffer) => {
+      this.stdoutBuffer = Buffer.concat([this.stdoutBuffer, data])
       this.emit('stdout', data.toString())
+      // if last character is '\n', then emit 'line' event
+      if (data[data.length - 1] === 0x0a) {
+        this.emit('line', data.toString())
+      }
     })
 
     this.childProcess.stderr?.on('data', (data: Buffer) => {
+      this.stderrBuffer = Buffer.concat([this.stderrBuffer, data])
       this.emit('stderr', data.toString())
     })
 
@@ -101,26 +112,41 @@ class Executable extends EventEmitter {
     }
   }
 
-  public async read(iFd: number | 'stdout' | 'stderr', n: number = 1024) {
-    const _iFd = iFd === 'stdout' ? 1 : iFd === 'stderr' ? 2 : iFd
-    const stream = this.childProcess?.stdio[_iFd]
-    if (!stream) {
-      throw new Error('Stream not found.')
+  public async read(
+    stream: 'stdout' | 'stderr',
+    n: number = 1024
+  ): Promise<string> {
+    const buffer = stream === 'stdout' ? this.stdoutBuffer : this.stderrBuffer
+    if (buffer.length === 0) {
+      return ''
     }
-
-    if (stream instanceof Readable) {
-      return readStream(stream, n)
+    const output = buffer.slice(0, n).toString()
+    if (stream === 'stdout') {
+      this.stdoutBuffer = this.stdoutBuffer.slice(n)
+    } else {
+      this.stderrBuffer = this.stderrBuffer.slice(n)
     }
-
-    throw new Error('Stream is not readable.')
+    return output
   }
 
-  public async rdStdout(n: number = 1024) {
-    return this.read('stdout', n)
-  }
-
-  public async rdStderr(n: number = 1024) {
-    return this.read('stderr', n)
+  public async readLine(stream: 'stdout' | 'stderr'): Promise<string> {
+    const buffer = stream === 'stdout' ? this.stdoutBuffer : this.stderrBuffer
+    const index = buffer.indexOf(0x0a)
+    if (index === -1) {
+      // wait until next line
+      return new Promise<string>((resolve, reject) => {
+        this.once('line', async () => {
+          resolve(await this.readLine(stream))
+        })
+      })
+    }
+    const output = buffer.slice(0, index).toString()
+    if (stream === 'stdout') {
+      this.stdoutBuffer = this.stdoutBuffer.slice(index + 1)
+    } else {
+      this.stderrBuffer = this.stderrBuffer.slice(index + 1)
+    }
+    return output
   }
 
   public stop(): void {

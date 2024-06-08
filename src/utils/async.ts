@@ -4,7 +4,7 @@
  * Created Date: Su Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 02 2024                                              *
+ * Last Modified: Sat Jun 08 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -29,4 +29,31 @@ export async function timed<T, CastToNumber extends boolean = true>(
   }
 
   return [res, diff as any]
+}
+
+export async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+// timeout a promise
+export async function timeout<T>(
+  fn: () => PromiseLike<T>,
+  ms: number
+): Promise<T> {
+  let timeoutId: NodeJS.Timeout | null = null
+  
+  try {
+    return await Promise.race([
+      fn(),
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('timeout'));
+        }, ms);
+      })
+    ]);
+  } finally {
+    timeoutId && clearTimeout(timeoutId);
+  }
 }

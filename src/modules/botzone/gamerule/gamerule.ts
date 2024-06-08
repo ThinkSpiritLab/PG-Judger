@@ -1,11 +1,11 @@
-import { Player } from '../player/player';
+import { LocalPlayer } from '../player/player'
 /*
  * File: gamerule.ts                                                           *
  * Project: pg-judger                                                          *
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Fri Jun 07 2024                                              *
+ * Last Modified: Sat Jun 08 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -15,38 +15,30 @@ import { Player } from '../player/player';
  * ----------	---	---------------------------------------------------------    *
  */
 
+type GameMeta = {
+  name: string
+  playerMinCount: number
+  playerMaxCount: number
+}
 
+export interface GameRule {
+  getMeta(): GameMeta
 
-export class GameRule {
+  onGameStart(): void
 
-  ctx: any
+  onPlayerMove(): void
 
-  // 获取游戏人数、等元数据
-  getMeta() {
-    return {
-      //TODO
-    }
-  }
+  checkPlayerCanJoin(player: LocalPlayer): boolean
 
-  onGameStart() {
-    //TODO
-  }
+  checkGameCanStart(): boolean
 
-  onPlayerMove() {
-    //TODO
-  }
+  checkGameShallEnd(): boolean
 
-  checkPlayerCanJoin(player: Player) {
-    //TODO
-  }
+  requestPlayerMove(player: LocalPlayer): void
 
-  checkGameCanStart() {
-    //TODO
-  }
+  onPlayerMoveReceived(player: LocalPlayer): void
+  onPlayerMoveTimeout(player: LocalPlayer): void
 
-  checkGameShallEnd() {
-
-  }
-
-
+  validatePlayerMove(player: LocalPlayer): boolean
+  applyPlayerMove(player: LocalPlayer): void
 }

@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Thu Jun 06 2024                                              *
+ * Last Modified: Sat Jun 08 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -71,7 +71,7 @@ export class CompareService {
 
       const [meter, judgeResult] = await Promise.all([
         cmp.measure,
-        cmp.rdStdout()
+        cmp.read('stdout')
       ])
 
       //TODO check compare meter here

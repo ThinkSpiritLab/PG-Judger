@@ -62,7 +62,6 @@ export class ExecService {
     }
   }
 
-  //fasade
   async runWithJailAndMeter(
     command: string,
     args: string[],
@@ -98,7 +97,8 @@ export class ExecService {
       meterOption.meterFd
     )
   }
-
+  
+  //fasade
   async runWithJailAndMeterFasade({
     command,
     args,
