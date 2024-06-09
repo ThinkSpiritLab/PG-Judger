@@ -79,6 +79,7 @@ class Executable extends EventEmitter {
       this.stdoutBuffer = Buffer.concat([this.stdoutBuffer, data])
       this.emit('stdout', data.toString())
       // if last character is '\n', then emit 'line' event
+      console.log(data[data.length - 1])
       if (data[data.length - 1] === 0x0a) {
         this.emit('line', data.toString())
       }

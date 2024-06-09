@@ -160,6 +160,7 @@ export class GuessNumberSingleGamerule
   }
   async onPlayerMoveReceived(player: IPlayer, move: SerializableObject) {
     const { guess } = move as { guess: number }
+    console.log('guess', guess)
     this.ctx.last_guess.set(player.id, guess)
   }
   async onPlayerMoveTimeout(player: IPlayer, move: SerializableObject) {

@@ -7,11 +7,11 @@ import { Game } from './game/game'
 @Injectable()
 export class BotzoneService {
   constructor(private readonly execService: ExecService) {
-    // this.test().then(() => {
-    //   console.log('done')
-    // }).catch((e) => {
-    //   console.error(e)
-    // })
+    this.test2().then(() => {
+      console.log('done')
+    }).catch((e) => {
+      console.error(e)
+    })
   }
 
   async test() {
@@ -65,6 +65,7 @@ export class BotzoneService {
       cwd: '/home/shiyuzhe/lab/lev/pg-judger/temp',
       timeLimit_s: 100
     }))
+    player.exec.start()
     const gamerule = new GuessNumberSingleGamerule()
     const game = new Game(gamerule)
 

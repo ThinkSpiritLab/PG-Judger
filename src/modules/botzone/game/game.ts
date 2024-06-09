@@ -40,18 +40,13 @@ export class Game extends EventEmitter {
     let move_count = 0
     const max_move_count = 25
     try {
-      while (
-        !(await this.gamerule.checkGameShallEnd(
-          Array.from(this.playerMap.values())
-        )) &&
-        move_count < max_move_count
-      ) {
+      while (await this.gameCanContinue(move_count, max_move_count)) {
         const next_player_id = await this.gamerule.getNextPlayerId()
         const next_player = this.playerMap.get(next_player_id)!
         const move = await next_player.move(
           await this.gamerule.createQuery(next_player_id)
         )
-        this.gamerule.onPlayerMoveReceived(next_player, move)
+        await this.gamerule.onPlayerMoveReceived(next_player, move)
         console.log('move', move)
         await this.gamerule.validatePlayerMove(next_player, move)
         await this.gamerule.applyPlayerMove(next_player, move)
@@ -62,10 +57,30 @@ export class Game extends EventEmitter {
       }
     } catch (e) {
       if (e instanceof GameEndException) {
-        console.log('game end')
+        console.log('game end due to GameEndException')
         return await this.gamerule.onGameSettled()
       }
+      throw e
     }
+    console.log('game end due to move count limit')
+  }
+
+  private async gameCanContinue(
+    move_count: number,
+    max_move_count: number
+  ) {
+    // return !(await this.gamerule.checkGameShallEnd(
+    //   Array.from(this.playerMap.values())
+    // )) &&
+    //   move_count < max_move_count
+    const ret = (
+      move_count < max_move_count &&
+      !(await this.gamerule.checkGameShallEnd(
+        Array.from(this.playerMap.values())
+      ))
+    )
+    console.log('gameCanContinue', ret)
+    return ret
   }
 
   addPlayer(player: IPlayer) {
