@@ -3,6 +3,7 @@ import { ExecService } from '../exec/exec.service'
 import { GuessNumberSinglePlayer, LocalPlayer } from './player/player'
 import { GuessNumberSingleGamerule } from './gamerule/gamerule'
 import { Game } from './game/game'
+import { sleep } from '@/utils/async'
 
 @Injectable()
 export class BotzoneService {
@@ -19,7 +20,7 @@ export class BotzoneService {
       command: '/home/shiyuzhe/lab/lev/pg-judger/temp/aplusbmany',
       args: [],
       memory_MB: 1024,
-      timeout_ms: 100000,
+      timeout_ms: 3000,
       stdio: ['pipe', 'pipe', 'pipe'],
       bindMount: [
         {
@@ -28,7 +29,7 @@ export class BotzoneService {
         }
       ],
       cwd: '/home/shiyuzhe/lab/lev/pg-judger/temp',
-      timeLimit_s: 100
+      // timeLimit_s: 100
     })
 
     exec.start()
@@ -51,10 +52,10 @@ export class BotzoneService {
   async test2() {
     // const player = new GuessNumberSinglePlayer()
     const player = new LocalPlayer('test', await this.execService.runWithJailAndMeterFasade({
-      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/guess_number',
+      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/myecho',
       args: [],
       memory_MB: 1024,
-      timeout_ms: 100000,
+      timeout_ms: 3000,
       stdio: ['pipe', 'pipe', 'pipe'],
       bindMount: [
         {
@@ -63,17 +64,22 @@ export class BotzoneService {
         }
       ],
       cwd: '/home/shiyuzhe/lab/lev/pg-judger/temp',
-      timeLimit_s: 100
+      // timeLimit_s: 5
     }))
     player.exec.start()
-    const gamerule = new GuessNumberSingleGamerule()
-    const game = new Game(gamerule)
+    await sleep(100)
 
-    game.addPlayer(player)
+    const resp1 = await player.moveRaw('213\n')
+    console.log(`resp1: ${resp1}`)
+    // const gamerule = new GuessNumberSingleGamerule()
+    // const game = new Game(gamerule)
 
-    await game.start()
+    // game.addPlayer(player)
 
-    // player.exec.stop()
-    
+    // await game.start()
+
+    player.exec.stop()
+    console.log(await player.exec.measure)
+    console.log('done')
   }
 }

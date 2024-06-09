@@ -128,7 +128,7 @@ export class ExecService {
     memory_MB: number
     stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
-    Omit<JailSpawnOption, 'timeLimit'>) {
+    Omit<JailSpawnOption, 'timeLimit_s'>) {
     while (stdio.length < 3) stdio.push('ignore')
     stdio.push('pipe') // append a pipe for meter
     // console.log(`memory_MB: ${memory_MB}`)
@@ -169,7 +169,7 @@ export class ExecService {
       // timeout is not used here due to
       // low accuracy of nsjail's timeout
       // used as a backup in case program stuck
-      timeLimit_s: Math.ceil(timeout_ms / 1000) + 1,
+      timeLimit_s: Math.ceil(timeout_ms / 1000) * 2 + 3,
       tmpfsMount
     }
 

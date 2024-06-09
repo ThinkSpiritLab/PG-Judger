@@ -91,14 +91,17 @@ class Executable extends EventEmitter {
     })
 
     this.childProcess.on('close', (code: number) => {
+      console.log('Process closed with code:', code)
       this.emit('close', code)
     })
 
     this.childProcess.on('error', (err: Error) => {
+      console.log('Process closed with err:', err)
       this.emit('error', err)
     })
 
     this.childProcess.on('exit', (code: number) => {
+      console.log('Process exited with code:', code)
       this.emit('exit', code)
     })
 
@@ -155,10 +158,7 @@ class Executable extends EventEmitter {
   }
 
   public stop(): void {
-    if (this.childProcess) {
-      this.childProcess.kill()
-      this.childProcess = null
-    }
+    this.write('\x03\n') // x03 is the ASCII code for Ctrl+C
   }
 
   public get process(): ChildProcess | null {
@@ -197,6 +197,10 @@ class MeteredExecuable extends Executable {
       this.process.on('error', (err) => {
         console.error('Process error:', err)
         reject(new MeterException('runtime-error', null, err.message))
+      })
+      this.process.on('exit', (code) => {
+        console.log('Process exit:', code)
+        reject(new MeterException('runtime-error', null, 'process exited'))
       })
       let resultStr = ''
       const resultStream: Readable = this.process.stdio[
