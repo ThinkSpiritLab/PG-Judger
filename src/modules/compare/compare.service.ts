@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 08 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -64,16 +64,19 @@ export class CompareService {
         args: [mode, '--user-fd', '0', '--std-fd', '3'],
         memory_MB: this.limits.memory_MB,
         timeout_ms: this.limits.timeout_ms,
-        stdio: [aFH.fd, 'pipe', 'pipe', bFH.fd]
+        stdio: [aFH.fd, 'pipe', 'pipe', bFH.fd],
+        // bindMount: [
+        //   { source: a, dest: '/a', mode: 'ro' },
+        //   { source: b, dest: '/b', mode: 'ro' }
+        // ]
       })
 
       cmp.start()
 
       const [meter, judgeResult] = await Promise.all([
         cmp.measure,
-        cmp.read('stdout')
+        cmp.readNthFd(1)
       ])
-
       //TODO check compare meter here
 
       if (!judgeResult) {

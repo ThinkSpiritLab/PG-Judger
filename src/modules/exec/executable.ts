@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 08 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -147,6 +147,10 @@ class Executable extends EventEmitter {
       this.stderrBuffer = this.stderrBuffer.slice(index + 1)
     }
     return output
+  }
+
+  public async readNthFd(n: number): Promise<string> {
+    return await readStream(this.childProcess?.stdio[n] as Readable, 1024) || ''
   }
 
   public stop(): void {

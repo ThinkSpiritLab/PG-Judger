@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Fri Jun 07 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -97,9 +97,14 @@ export class CommonPipelineProvider {
 
             const task = await this.execService.runWithJailAndMeterFasade({
               command: option.compilerExec,
-              args: [...option.compilerArgs, srcPath, '-o', ctx.store.targetPath],
-              memory_MB: option.meterOption.memoryLimit! / 8 / 1024 / 1024,
-              timeout_ms: option.meterOption.timeLimit!,
+              args: [
+                ...option.compilerArgs,
+                srcPath,
+                '-o',
+                ctx.store.targetPath
+              ],
+              memory_MB: option.meterOption.memoryLimit || 1024,
+              timeout_ms: option.meterOption.timeLimit || 4,
               bindMount: [{ source: ctx.store.tempDir!, mode: 'rw' }],
               cwd: ctx.store.tempDir!
             })
@@ -111,7 +116,7 @@ export class CommonPipelineProvider {
               task.measure!
             ])
 
-            console.log(`compile measure: ${JSON.stringify(measure)}`)
+            // console.log(`compile measure: ${JSON.stringify(measure)}`)
 
             if (measure.returnCode !== 0) {
               // throw new JudgeCompileError('compile failed')
@@ -178,6 +183,8 @@ export class CommonPipelineProvider {
                 task.getExitAwaiter(),
                 task.measure
               ])
+
+              console.log(`user_measure: ${JSON.stringify(measure)}`)
 
               if (!measure) {
                 console.warn('measure is not set')

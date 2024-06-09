@@ -9,7 +9,7 @@ import { SerializableObject } from '../serialize'
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 08 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -32,6 +32,8 @@ export interface GameRule {
 
   onGameStart(): void
 
+  onGameSettled(): Promise<SerializableObject>
+
   checkPlayerCanJoin(player: IPlayer): Promise<boolean>
 
   checkGameCanStart(players: IPlayer[]): Promise<boolean>
@@ -49,7 +51,7 @@ export interface GameRule {
   onPlayerMoveReceived(player: IPlayer, move: SerializableObject): Promise<void>
   onPlayerMoveTimeout(player: IPlayer, move: SerializableObject): void
 
-  applyPlayerMove(player: IPlayer, move: SerializableObject): void
+  applyPlayerMove(player: IPlayer, move: SerializableObject): Promise<void>
 }
 
 export abstract class LocalGamerule extends EventEmitter implements GameRule {
@@ -68,6 +70,9 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
     this.id = id
     this.exec = exec
     this.gameController = gameController
+  }
+  onGameSettled(): Promise<SerializableObject> {
+    throw new Error('Method not implemented.')
   }
   createQuery(player: string): Promise<SerializableObject> {
     throw new Error('Method not implemented.')
@@ -114,7 +119,7 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
     return true
   }
 
-  applyPlayerMove(player: IPlayer): void {}
+  async applyPlayerMove(player: IPlayer): Promise<void> {}
 }
 
 export class GuessNumberSingleGamerule
@@ -161,6 +166,10 @@ export class GuessNumberSingleGamerule
     throw new Error('Method not implemented.')
   }
   async validatePlayerMove(player: IPlayer, move: SerializableObject) {
+    if (move.guess === this.ctx.target) {
+      this.ctx.winner = player
+      throw new GameEndException()
+    }
     return true //TODO validate
   }
   async applyPlayerMove(player: IPlayer, move: SerializableObject) {
@@ -172,15 +181,21 @@ export class GuessNumberSingleGamerule
 
   async createQuery(player: string): Promise<SerializableObject> {
     if (this.ctx.last_guess.has(player)) {
-      if (this.ctx.last_guess.get(player) === this.ctx.target) {
-        throw new GameEndException()
-      } else if (this.ctx.last_guess.get(player) < this.ctx.target) {
+      if (this.ctx.last_guess.get(player) < this.ctx.target) {
         return { hint: 'larger' }
       } else {
         return { hint: 'smaller' }
       }
     } else {
       return { hint: 'begin' }
+    }
+  }
+
+  async onGameSettled(): Promise<SerializableObject> {
+    return {
+      target: this.ctx.target,
+      history: this.ctx.history,
+      winner: this.ctx.winner
     }
   }
 }

@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Tue Jun 04 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -123,7 +123,7 @@ class Pipeline<Ts extends AnyFunction[] = []> {
     try {
       let result: any = null
       for (const task of this._ctx.tasks) {
-        const [output, time_ms] = await timed(() => task.task.run(result))
+        const [output, time_ms] = await timed(async () => await task.task.run(result))
 
         // console.log(`Task ${task.name} finished  (+${time_ms}ms)`)
 

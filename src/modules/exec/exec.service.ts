@@ -131,10 +131,10 @@ export class ExecService {
     Omit<JailSpawnOption, 'timeLimit'>) {
     while (stdio.length < 3) stdio.push('ignore')
     stdio.push('pipe') // append a pipe for meter
-
+    // console.log(`memory_MB: ${memory_MB}`)
     const meter: MeterSpawnOption = {
       meterFd: stdio.length - 1, // append to the end, normally 3 or 4(if using hc and ojcmp, it is stdin stdout stderr userFd meterFd)
-      memoryLimit: memory_MB * 1024 * 8,
+      memoryLimit: memory_MB * 1024 * 1024,
       timeLimit: timeout_ms,
       gid,
       uid,
@@ -161,7 +161,7 @@ export class ExecService {
       passFd: range(stdio.length),
       //XXX this is intentionally set to 8GB. if we set this exactly to memory_MB, the meter will
       //    unable to measure the memory usage of the program, but directly throw a runtime error
-      // rlimitAS_MB: 1024 * 8 *1024,
+      // rlimitAS_MB: 1024 *1024,
       rlimitCPU,
       rlimitFSIZE_MB,
       rlimitSTACK_MB: 64,

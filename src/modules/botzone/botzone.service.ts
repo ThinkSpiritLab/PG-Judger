@@ -7,11 +7,11 @@ import { Game } from './game/game'
 @Injectable()
 export class BotzoneService {
   constructor(private readonly execService: ExecService) {
-    this.test2().then(() => {
-      console.log('done')
-    }).catch((e) => {
-      console.error(e)
-    })
+    // this.test().then(() => {
+    //   console.log('done')
+    // }).catch((e) => {
+    //   console.error(e)
+    // })
   }
 
   async test() {
@@ -49,12 +49,30 @@ export class BotzoneService {
   }
 
   async test2() {
-    const player = new GuessNumberSinglePlayer()
+    // const player = new GuessNumberSinglePlayer()
+    const player = new LocalPlayer('test', await this.execService.runWithJailAndMeterFasade({
+      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/guess_number',
+      args: [],
+      memory_MB: 1024,
+      timeout_ms: 100000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      bindMount: [
+        {
+          source: '/home/shiyuzhe/lab/lev/pg-judger/temp',
+          mode: 'rw'
+        }
+      ],
+      cwd: '/home/shiyuzhe/lab/lev/pg-judger/temp',
+      timeLimit_s: 100
+    }))
     const gamerule = new GuessNumberSingleGamerule()
     const game = new Game(gamerule)
 
     game.addPlayer(player)
 
     await game.start()
+
+    // player.exec.stop()
+    
   }
 }

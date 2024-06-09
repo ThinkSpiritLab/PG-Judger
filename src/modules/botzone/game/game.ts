@@ -4,7 +4,7 @@
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 08 2024                                              *
+ * Last Modified: Sun Jun 09 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -63,6 +63,7 @@ export class Game extends EventEmitter {
     } catch (e) {
       if (e instanceof GameEndException) {
         console.log('game end')
+        return await this.gamerule.onGameSettled()
       }
     }
   }
