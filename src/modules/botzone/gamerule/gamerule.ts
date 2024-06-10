@@ -9,7 +9,7 @@ import { SerializableObject } from '../serialize'
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Mon Jun 10 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -54,6 +54,10 @@ export interface GameRule {
   applyPlayerMove(player: IPlayer, move: SerializableObject): Promise<void>
 }
 
+
+/**
+ * if gamerule respond with "idk", use default behavior fallback
+ */
 export abstract class LocalGamerule extends EventEmitter implements GameRule {
   id: string
   exec: MeteredExecuable
@@ -71,14 +75,20 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
     this.exec = exec
     this.gameController = gameController
   }
-  onGameSettled(): Promise<SerializableObject> {
-    throw new Error('Method not implemented.')
+
+  async sendQuery(query: SerializableObject): Promise<SerializableObject> {
+    this.exec.write(JSON.stringify(query))
+    return JSON.parse(await this.exec.readLine('stdout'))
   }
-  createQuery(player: string): Promise<SerializableObject> {
-    throw new Error('Method not implemented.')
+
+  async onGameSettled(): Promise<SerializableObject> {
+    return await this.sendQuery({ type: 'settlement' })
   }
-  onGameStart(): void {
-    throw new Error('Method not implemented.')
+  async createQuery(player: string): Promise<SerializableObject> {
+    return await this.sendQuery({ type: 'query', player })
+  }
+  async onGameStart(): Promise<void> {
+    await this.sendQuery({ type: 'start' })
   }
 
   getMeta(): GameMeta {
@@ -89,24 +99,24 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
     }
   }
 
-  onGameStarts() {}
-
-  onPlayerMove() {}
+  async onPlayerMove(player: IPlayer, move: SerializableObject) {
+    await this.sendQuery({ type: 'move', player: player.id, move })
+  }
 
   async checkPlayerCanJoin(player: IPlayer) {
     return true
   }
 
-  async checkGameCanStart() {
-    return true
+  async checkGameCanStart(players: IPlayer[]) {
+    return players.length === 1 //TODO
   }
 
   async checkGameShallEnd() {
-    return this.winner !== undefined
+    return this.winner !== undefined //TODO
   }
 
   async getNextPlayerId() {
-    return this.gameController.getPlayers().next().value.id as PlayerID
+    return this.gameController.getPlayers().next().value.id as PlayerID//TODO
   }
 
   async onPlayerMoveReceived(player: IPlayer): Promise<void> {
@@ -115,11 +125,13 @@ export abstract class LocalGamerule extends EventEmitter implements GameRule {
 
   onPlayerMoveTimeout(player: IPlayer): void {}
 
-  async validatePlayerMove(player: IPlayer) {
-    return true
+  async validatePlayerMove(player: IPlayer, move: SerializableObject) {
+    return (await this.sendQuery({ type: 'validate', player: player.id, move })).result
   }
 
-  async applyPlayerMove(player: IPlayer): Promise<void> {}
+  async applyPlayerMove(player: IPlayer, move: SerializableObject): Promise<void> {
+    await this.sendQuery({ type: 'apply', player: player.id, move })
+  }
 }
 
 export class GuessNumberSingleGamerule
@@ -149,7 +161,7 @@ export class GuessNumberSingleGamerule
     return true
   }
   async checkGameCanStart(players: IPlayer[]) {
-    return players.length === 1
+    return players.length === 1 //TODO
   }
   async checkGameShallEnd(players: IPlayer[]) {
     // NOT USED, we throw an exception instead
