@@ -120,7 +120,8 @@ export class ExecService {
     rlimitFSIZE_MB = 1,
     // rlimitSTACK_MB = 64,
     symlink = [],
-    tmpfsMount = []
+    tmpfsMount = [],
+    forward_signals = true,
   }: {
     command: string
     args: string[]
@@ -170,7 +171,8 @@ export class ExecService {
       // low accuracy of nsjail's timeout
       // used as a backup in case program stuck
       timeLimit_s: Math.ceil(timeout_ms / 1000) * 2 + 3,
-      tmpfsMount
+      tmpfsMount,
+      forward_signals
     }
 
     return this.runWithJailAndMeter(command, args, meter, jail, stdio)

@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Mon Jun 10 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -157,8 +157,17 @@ class Executable extends EventEmitter {
     return await readStream(this.childProcess?.stdio[n] as Readable, 1024) || ''
   }
 
+  /**
+   * @deprecated
+   */
   public stop(): void {
     this.write('\x03\n') // x03 is the ASCII code for Ctrl+C
+  }
+
+  public kill(signal: NodeJS.Signals = 'SIGKILL'): void {
+    if (this.childProcess) {
+      this.childProcess.kill(signal)
+    }
   }
 
   public get process(): ChildProcess | null {

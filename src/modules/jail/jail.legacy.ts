@@ -4,7 +4,7 @@
  * Created Date: Fr May 2024                                                   *
  * Author: Legacy                                                              *
  * -----                                                                       *
- * Last Modified: Mon Jun 03 2024                                              *
+ * Last Modified: Mon Jun 10 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -61,6 +61,8 @@ export interface JailSpawnOption {
   cwd?: string
   env?: { [key: string]: string }
   passFd?: number[]
+
+  forward_signals?: boolean
 }
 
 @Injectable()

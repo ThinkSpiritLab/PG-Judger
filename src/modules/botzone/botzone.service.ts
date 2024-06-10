@@ -52,7 +52,7 @@ export class BotzoneService {
   async test2() {
     // const player = new GuessNumberSinglePlayer()
     const player = new LocalPlayer('test', await this.execService.runWithJailAndMeterFasade({
-      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/myecho',
+      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/echo_plain',
       args: [],
       memory_MB: 1024,
       timeout_ms: 3000,
@@ -78,7 +78,7 @@ export class BotzoneService {
 
     // await game.start()
 
-    player.exec.stop()
+    player.exec.kill('SIGINT')
     console.log(await player.exec.measure)
     console.log('done')
   }

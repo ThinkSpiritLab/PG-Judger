@@ -177,5 +177,9 @@ export class JailService {
       cfg.passFd.forEach((value) => jailArgs.push('--pass_fd', value.toString())
       )
     }
+
+    if (cfg.forward_signals) {
+      jailArgs.push('--forward_signals')
+    }
   }
 }
