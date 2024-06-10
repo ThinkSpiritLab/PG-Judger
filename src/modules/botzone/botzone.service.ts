@@ -78,7 +78,7 @@ export class BotzoneService {
 
     // await game.start()
 
-    player.exec.kill('SIGINT')
+    player.exec.quit() //Send SIGINT to user program (pass thru jail and hc)
     console.log(await player.exec.measure)
     console.log('done')
   }

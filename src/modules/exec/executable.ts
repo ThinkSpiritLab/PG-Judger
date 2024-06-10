@@ -164,10 +164,14 @@ class Executable extends EventEmitter {
     this.write('\x03\n') // x03 is the ASCII code for Ctrl+C
   }
 
-  public kill(signal: NodeJS.Signals = 'SIGKILL'): void {
+  public sendSignal(signal: NodeJS.Signals): void {
     if (this.childProcess) {
       this.childProcess.kill(signal)
     }
+  }
+
+  public quit(): void {
+    this.sendSignal('SIGINT')
   }
 
   public get process(): ChildProcess | null {
