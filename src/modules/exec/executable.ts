@@ -91,17 +91,17 @@ class Executable extends EventEmitter {
     })
 
     this.childProcess.on('close', (code: number) => {
-      console.log('Process closed with code:', code)
+      // console.log('Process closed with code:', code)
       this.emit('close', code)
     })
 
     this.childProcess.on('error', (err: Error) => {
-      console.log('Process closed with err:', err)
+      // console.log('Process closed with err:', err)
       this.emit('error', err)
     })
 
     this.childProcess.on('exit', (code: number) => {
-      console.log('Process exited with code:', code)
+      // console.log('Process exited with code:', code)
       this.emit('exit', code)
     })
 
@@ -142,6 +142,10 @@ class Executable extends EventEmitter {
         this.once('line', async () => {
           resolve(await this.readLine(stream))
         })
+
+        this.once('close', () => {
+          reject('Process closed.')
+        })
       })
     }
     const output = buffer.slice(0, index).toString()
@@ -170,8 +174,24 @@ class Executable extends EventEmitter {
     }
   }
 
+  /**
+   * Note that nsjail and hc may forward the signal to the user program
+   * 
+   * check nsjail configs. (default: forward_signals = true)
+   */
   public quit(): void {
     this.sendSignal('SIGINT')
+  }
+
+  /**
+   * NSJail will handle SIGKILL signal and terminate the process (not forward)
+   * 
+   * if do so, meter will fail
+   * 
+   * use carefully
+   */
+  public kill(): void {
+    this.sendSignal('SIGKILL')
   }
 
   public get process(): ChildProcess | null {

@@ -4,7 +4,7 @@
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Mon Jun 10 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -43,7 +43,7 @@ export class Game extends EventEmitter {
       while (await this.gameCanContinue(move_count, max_move_count)) {
         const next_player_id = await this.gamerule.getNextPlayerId()
         const next_player = this.playerMap.get(next_player_id)!
-        const move = await next_player.move(
+        const move = await next_player.move( //TODO add timeout
           await this.gamerule.createQuery(next_player_id)
         )
         await this.gamerule.onPlayerMoveReceived(next_player, move)
@@ -69,17 +69,12 @@ export class Game extends EventEmitter {
     move_count: number,
     max_move_count: number
   ) {
-    // return !(await this.gamerule.checkGameShallEnd(
-    //   Array.from(this.playerMap.values())
-    // )) &&
-    //   move_count < max_move_count
     const ret = (
       move_count < max_move_count &&
       !(await this.gamerule.checkGameShallEnd(
         Array.from(this.playerMap.values())
       ))
     )
-    console.log('gameCanContinue', ret)
     return ret
   }
 

@@ -52,7 +52,7 @@ export class BotzoneService {
   async test2() {
     // const player = new GuessNumberSinglePlayer()
     const player = new LocalPlayer('test', await this.execService.runWithJailAndMeterFasade({
-      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/echo_plain',
+      command: '/home/shiyuzhe/lab/lev/pg-judger/temp/guess_number',
       args: [],
       memory_MB: 1024,
       timeout_ms: 3000,
@@ -67,16 +67,16 @@ export class BotzoneService {
       // timeLimit_s: 5
     }))
     player.exec.start()
-    await sleep(100)
+    // await sleep(100)
 
-    const resp1 = await player.moveRaw('213\n')
-    console.log(`resp1: ${resp1}`)
-    // const gamerule = new GuessNumberSingleGamerule()
-    // const game = new Game(gamerule)
+    // const resp1 = await player.moveRaw('213\n')
+    // console.log(`resp1: ${resp1}`)
+    const gamerule = new GuessNumberSingleGamerule()
+    const game = new Game(gamerule)
 
-    // game.addPlayer(player)
+    game.addPlayer(player)
 
-    // await game.start()
+    await game.start()
 
     player.exec.quit() //Send SIGINT to user program (pass thru jail and hc)
     console.log(await player.exec.measure)

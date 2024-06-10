@@ -4,7 +4,7 @@
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Mon Jun 10 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -45,7 +45,6 @@ export class LocalPlayer extends EventEmitter implements IPlayer {
   async move(req: PlayerMoveRequest): Promise<SerializableObject> {
     this.exec.write(serialize(req))
     this.exec.write('\n')
-    console.log('write', req)
     const resp_str = await this.exec.readLine('stdout')
     if (!resp_str) {
       throw new PlayerInvalidMoveError()
