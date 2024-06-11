@@ -1,7 +1,7 @@
 /*
- * File: decl.ts                                                               *
+ * File: plauer.legacy.ts                                                      *
  * Project: pg-judger                                                          *
- * Created Date: Sa Jun 2024                                                   *
+ * Created Date: Tu Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
  * Last Modified: Tue Jun 11 2024                                              *
@@ -14,28 +14,22 @@
  * ----------	---	---------------------------------------------------------    *
  */
 
-export type SerializableObject = Record<string, any>
-export function serialize(obj: SerializableObject): string {
-  // create single line string
-  return JSON.stringify(obj, null, 0)
+import { MeteredExecuable } from '@/modules/exec/executable'
+import { PlayerMoveRequest, PlayerMoveResponce, PlayerMoveResponceSchema } from '../decl'
+import { deserialize, serialize } from '../serialize'
+
+interface ILagacyPlayer {
+  send(req: PlayerMoveRequest): Promise<PlayerMoveResponce>
 }
 
-export function deserialize(str: string): SerializableObject {
-  return JSON.parse(str)
-}
+class LegacyPlayer implements ILagacyPlayer {
+  exec: MeteredExecuable
 
-export function trySerialize(obj: any): [string, boolean] {
-  try {
-    return [serialize(obj), true]
-  } catch (e) {
-    return ['', false]
-  }
-}
+  async send(req: PlayerMoveRequest): Promise<PlayerMoveResponce> {
+    this.exec.write(serialize(req) + '\n')
+    
+    const ret = await this.exec.readLine('stdout')
 
-export function tryDeserialize(str: string): [SerializableObject, boolean] {
-  try {
-    return [deserialize(str), true]
-  } catch (e) {
-    return [{}, false]
+    return PlayerMoveResponceSchema.parse(deserialize(ret))
   }
 }

@@ -4,7 +4,7 @@
  * Created Date: Su Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jun 08 2024                                              *
+ * Last Modified: Tue Jun 11 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -15,20 +15,18 @@
  */
 
 // calcutate execution time of a function
-export async function timed<T, CastToNumber extends boolean = true>(
+export async function timed<T>(
   fn: () => T | PromiseLike<T>,
-  useMs = true,
-  _doUnsafeCastToNumber: CastToNumber = true as CastToNumber
-): Promise<[T, CastToNumber extends true ? number : bigint]> {
+  _timeout?: number
+): Promise<[T, number]> {
   const start = process.hrtime.bigint()
-  const res = await fn()
+  // const res = await fn()
+  const res = _timeout ? await timeout(fn, _timeout) : await fn()
   const end = process.hrtime.bigint()
   let diff = end - start
-  if (useMs) {
-    diff /= BigInt(1e6)
-  }
+  diff /= BigInt(1e6)
 
-  return [res, diff as any]
+  return [res, Number(diff)] // unsafe cast
 }
 
 export async function sleep(ms: number): Promise<void> {
@@ -39,21 +37,21 @@ export async function sleep(ms: number): Promise<void> {
 
 // timeout a promise
 export async function timeout<T>(
-  fn: () => PromiseLike<T>,
+  fn: () => PromiseLike<T> | T,
   ms: number
 ): Promise<T> {
   let timeoutId: NodeJS.Timeout | null = null
-  
+
   try {
     return await Promise.race([
       fn(),
       new Promise<T>((_, reject) => {
         timeoutId = setTimeout(() => {
-          reject(new Error('timeout'));
-        }, ms);
+          reject(new Error('timeout'))
+        }, ms)
       })
-    ]);
+    ])
   } finally {
-    timeoutId && clearTimeout(timeoutId);
+    timeoutId && clearTimeout(timeoutId)
   }
 }

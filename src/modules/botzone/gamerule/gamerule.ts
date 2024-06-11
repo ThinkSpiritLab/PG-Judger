@@ -1,7 +1,7 @@
 import { MeteredExecuable } from '@/modules/exec/executable'
 import { EventEmitter } from 'node:events'
 import { GameController } from '../game/game'
-import { IPlayer, LocalPlayer, PlayerID } from '../player/player'
+import { IPlayer, PlayerID } from '../player/player'
 import { SerializableObject } from '../serialize'
 /*
  * File: gamerule.ts                                                           *
@@ -9,7 +9,7 @@ import { SerializableObject } from '../serialize'
  * Created Date: Fr Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 10 2024                                              *
+ * Last Modified: Tue Jun 11 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -24,6 +24,7 @@ type GameMeta = {
   playerMinCount: number
   playerMaxCount: number
 }
+
 
 export interface GameRule {
   gameController: GameController
