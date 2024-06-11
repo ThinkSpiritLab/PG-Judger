@@ -161,12 +161,12 @@ class Executable extends EventEmitter {
     return await readStream(this.childProcess?.stdio[n] as Readable, 1024) || ''
   }
 
-  /**
-   * @deprecated
-   */
-  public stop(): void {
-    this.write('\x03\n') // x03 is the ASCII code for Ctrl+C
-  }
+  // /**
+  //  * @deprecated
+  //  */
+  // public stop(): void {
+  //   this.write('\x03\n') // x03 is the ASCII code for Ctrl+C
+  // }
 
   public sendSignal(signal: NodeJS.Signals): void {
     if (this.childProcess) {
@@ -192,6 +192,14 @@ class Executable extends EventEmitter {
    */
   public kill(): void {
     this.sendSignal('SIGKILL')
+  }
+
+  public freeze(): void {
+    this.sendSignal('SIGSTOP')
+  }
+
+  public continue(): void {
+    this.sendSignal('SIGCONT')
   }
 
   public get process(): ChildProcess | null {
