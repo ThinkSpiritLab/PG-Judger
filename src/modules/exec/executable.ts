@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Mon Jun 10 2024                                              *
+ * Last Modified: Mon Jun 17 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -143,7 +143,7 @@ class Executable extends EventEmitter {
           resolve(await this.readLine(stream))
         })
 
-        this.once('close', () => {
+        this.once('close', () => { //this cause memory leak
           reject('Process closed.')
         })
       })
