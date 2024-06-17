@@ -24,12 +24,14 @@
     "codegen": "openapi-generator-cli generate -i openapi.json -g typescript-axios -o ./generated-api"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^10.1.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.2",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^7.3.1",
     "better-sqlite3": "^11.0.0",
+    "bullmq": "^5.8.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cross-env": "^7.0.3",
