@@ -8,15 +8,15 @@ import { sleep } from '@/utils/async'
 @Injectable()
 export class BotzoneService {
   constructor(private readonly execService: ExecService) {
-    this.test2().then(() => {
-      console.log('done')
-    }).catch((e) => {
-      console.error(e)
-    })
+    // this.test2().then(() => {
+    //   console.log('done')
+    // }).catch((e) => {
+    //   console.error(e)
+    // })
   }
 
   async test() {
-    const exec = await this.execService.runWithJailAndMeterFasade({
+    const exec = await this.execService.createJailAndMeterFasadeTask({
       command: '/home/shiyuzhe/lab/lev/pg-judger/temp/aplusbmany',
       args: [],
       memory_MB: 1024,
@@ -51,7 +51,7 @@ export class BotzoneService {
 
   async test2() {
     // const player = new GuessNumberSinglePlayer()
-    const player = new LocalPlayer('test', await this.execService.runWithJailAndMeterFasade({
+    const player = new LocalPlayer('test', await this.execService.createJailAndMeterFasadeTask({
       command: '/home/shiyuzhe/lab/lev/pg-judger/temp/guess_number',
       args: [],
       memory_MB: 1024,

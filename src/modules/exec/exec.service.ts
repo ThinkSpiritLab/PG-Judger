@@ -49,7 +49,7 @@ export class ExecService {
   }
 
   // run a interactive command (stdin may be required)
-  async runInteractiveCommand(command: string, args: string[]) {
+  runInteractiveCommand(command: string, args: string[]) {
     const child = spawn(command, args)
 
     child.stdout.setEncoding('utf8')
@@ -62,7 +62,7 @@ export class ExecService {
     }
   }
 
-  async runWithJailAndMeter(
+  runWithJailAndMeter(
     command: string,
     args: string[],
     meterOption: MeterSpawnOption,
@@ -99,9 +99,9 @@ export class ExecService {
   }
   
   //fasade
-  async runWithJailAndMeterFasade({
+  createJailAndMeterFasadeTask({
     command,
-    args,
+    args = [],
     timeout_ms = 2000,
     memory_MB = 1024 * 8,
     stdio = [],
@@ -124,9 +124,9 @@ export class ExecService {
     forward_signals = true,
   }: {
     command: string
-    args: string[]
-    timeout_ms: number
-    memory_MB: number
+    args?: string[]
+    timeout_ms?: number
+    memory_MB?: number
     stdio?: CompleteStdioOptions
   } & Omit<MeterSpawnOption, 'memoryLimit' | 'timeLimit' | 'meterFd'> &
     Omit<JailSpawnOption, 'timeLimit_s'>) {

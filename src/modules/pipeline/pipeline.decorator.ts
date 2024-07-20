@@ -40,6 +40,7 @@ export class PipelineRegistryService implements OnModuleInit {
           const name = Reflect.getMetadata('pipeline:name', method)
           if (name) {
             this.pipelineService.register(name, method.bind(instance))
+            console.log(`Register pipeline ${name}`)
           }
         })
     })

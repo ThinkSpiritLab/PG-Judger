@@ -4,7 +4,7 @@
  * Created Date: Th May 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Sat Jul 20 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -115,7 +115,8 @@ class Pipeline<Ts extends AnyFunction[] = []> {
   }
 
   setStore(store: PipelineStore) {
-    this._ctx.store = store
+    // this._ctx.store = store // this is wrong. we need to merge the store
+    Object.assign(this._ctx.store, store)
   }
 
   async run<T extends PipelineStore = PipelineStore>(init_store: T) {

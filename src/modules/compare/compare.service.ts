@@ -4,7 +4,7 @@
  * Created Date: Sa Jun 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sun Jun 09 2024                                              *
+ * Last Modified: Sat Jul 20 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -59,7 +59,7 @@ export class CompareService {
       aFH = await open(a, 'r+')
       bFH = await open(b, 'r+')
 
-      cmp = await this.execService.runWithJailAndMeterFasade({
+      cmp = await this.execService.createJailAndMeterFasadeTask({
         command: this.ojcmpPath,
         args: [mode, '--user-fd', '0', '--std-fd', '3'],
         memory_MB: this.limits.memory_MB,

@@ -1,26 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { CompileException, CompileService } from '../compile/compile.service'
 import { PipelineService } from '../pipeline/pipeline.service'
-import {
-  CommonCompileStore,
-  CommonJudgeOption,
-  CommonJudgeStore
-} from '../compile/pipelines/common'
-import { rm } from 'fs/promises'
 import { MeterResult, testMeterOrThrow } from '../meter/meter.service'
 import { Pipeline } from '../pipeline/pipeline'
 import { JudgeException } from './judge.exceptions'
 import { MeterException } from '../meter/meter.exception'
 import { PipelineRuntimeError } from '../pipeline/pipeline.exception'
-import { toNormalJudgeRequest } from './test/utils'
-import stack from './test/bomb/stack'
-import { withTempDir } from '../compile/pipelines/utils'
-import { ThrowUtils } from '@/utils/throw'
+import { withTempDir } from '../../pipelines/utils'
 import { JudgeResultBuilder } from './judge-result'
+import { toNormalJudgeRequest } from './test/utils'
 import AC from './test/cpp/AC'
-import CE from './test/cpp/CE'
-import TLE from './test/cpp/TLE'
-import MLE from './test/cpp/MLE'
+
 
 // TODO 支持交互式(流)：将用户程序的标准输入输出接到interactor程序
 // [用户输入 用户输出 交互程序错误 样例输入FD 样例输出FD ignore]
@@ -101,10 +91,10 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    // setTimeout(() => {
-    //   this.judge(toNormalJudgeRequest(AC, 'cpp')) //FIXME: THIS SEEMS CANNOT RUN PARALLEL
-    //   // this.judge(toNormalJudgeRequest(AC, 'cpp'))
-    // }, 600)
+    setTimeout(() => {
+      this.judge(toNormalJudgeRequest(AC, 'cpp')) 
+      // this.judge(toNormalJudgeRequest(AC, 'cpp'))
+    }, 600)
   }
 
   async judge(req: JudgeRequest) {
@@ -123,11 +113,11 @@ export class JudgeService {
   async normalJudge({ cases, user, policy }: NormalJudgeRequest) {
     return await withTempDir(async (tempDir) => {
       const judgeResult = new JudgeResultBuilder(cases)
-      let store: CommonCompileStore | null = null
+      let store: Record<string, any> = {}
 
       try {
         // compile
-        store = await this.compile(store, user, tempDir, judgeResult)
+        store = await this.compile({ ...store, tempDir }, user, judgeResult)
         // run testcases
         try {
           const judgeFactory = this.pipelineService.getPipeline(
@@ -177,14 +167,12 @@ export class JudgeService {
   }
 
   private async compile(
-    store: CommonCompileStore | null,
+    store: Record<string, any>,
     user: ExecutableInfo,
-    tempDir: string,
     judgeResult: JudgeResultBuilder
   ) {
     try {
-      store = (await this.compileService.compile(user, { tempDir }))
-        .store as CommonCompileStore
+      await this.compileService.compile(user, store)
     } catch (error) {
       //TODO refactor this
       if (error instanceof PipelineRuntimeError) {
@@ -206,14 +194,14 @@ export class JudgeService {
 
   private async runTestcase(
     judgePipeline: Pipeline<any>,
-    store: CommonCompileStore,
+    store: Record<string, any>,
     testcase: TestCase,
     judgeResult: JudgeResultBuilder,
     runtime: { memory: number; cpuTime: number; output: number },
     policy: TestPolicy
   ) {
     try {
-      await runJudgerPipeline(judgePipeline, store, testcase, judgeResult)
+      await runJudgePipeline(judgePipeline, store, testcase, judgeResult)
     } catch (error) {
       if (error instanceof JudgeException) {
         handleJudgeException(judgeResult, error)
@@ -290,18 +278,18 @@ function configureJudgePipeline({
       timeLimit: runtime.cpuTime,
       pidLimit: 1 //TODO check this
     }
-  } satisfies CommonJudgeOption)
+  })
 }
 
-async function runJudgerPipeline(
+async function runJudgePipeline(
   judgePipeline: Pipeline<any>,
-  store: CommonCompileStore,
+  store: Record<string, any>,
   testcase: TestCase,
   testResult: JudgeResultBuilder
 ) {
   const {
     store: { user_measure, result }
-  } = await judgePipeline.run<CommonJudgeStore>({
+  } = await judgePipeline.run<Record<string, any>>({//TODO fix type
     targetPath: store.targetPath,
     case: testcase,
     tempDir: store.tempDir
