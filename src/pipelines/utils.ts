@@ -103,6 +103,6 @@ export async function withTempDir<T>(
     _tempDir = await getTempDir()
     return await fn(_tempDir)
   } finally {
-    // cleanup()
+    cleanup()
   }
 }

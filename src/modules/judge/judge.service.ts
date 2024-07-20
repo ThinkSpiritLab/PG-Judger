@@ -117,11 +117,11 @@ export class JudgeService {
 
       try {
         // compile
-        store = await this.compile({ ...store, tempDir }, user, judgeResult)
+        store = await this.compile({ ...store, tempDir, user }, user, judgeResult)
         // run testcases
         try {
           const judgeFactory = this.pipelineService.getPipeline(
-            'common-run-testcase'
+            'simple-run-testcase'
           )
 
           const {
@@ -290,9 +290,8 @@ async function runJudgePipeline(
   const {
     store: { user_measure, result }
   } = await judgePipeline.run<Record<string, any>>({//TODO fix type
-    targetPath: store.targetPath,
+    ...store,
     case: testcase,
-    tempDir: store.tempDir
   })
   testResult.push({ measure: user_measure!, result: result! })
 }

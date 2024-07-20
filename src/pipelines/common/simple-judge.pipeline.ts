@@ -39,15 +39,12 @@ import { JudgeException } from '@/modules/judge/judge.exceptions'
 type SimpleJudgeOption = Object.Readonly<{}>
 
 type SimpleJudgeStore = {
-  jailOption: JailSpawnOption //TODO remove legacy option
-  meterOption: Omit<MeterSpawnOption, 'meterFd'> //TODO remove legacy option
-  targetPath: string
   case: TestCase
   tempDir: string
-  // set in runtime
-  user_exit_code?: number
-  result?: CompareResult
-  user_measure?: MeterResult
+  user: ExecutableInfo
+  user_exit_code: number
+  user_measure: MeterResult
+  result: CompareResult
 }
 
 @Injectable()
@@ -60,12 +57,12 @@ export class SimpleJudgePipelineProvider {
   // note that this only test a single testcase
   @RegisterPipeline('simple-run-testcase')
   simpleJudgePipelineFactory(option: SimpleJudgeOption) {
-    return Pipeline.create<SimpleJudgeStore>(({ pipe, ctx }) => {
-      const s = ctx.store
+    return Pipeline.create<SimpleJudgeStore>(({ pipe, ctx: { store: s } }) => {
       return pipe(
         async () => {
+          console.log('init2', s)
           if (!s.tempDir) {
-            throw new Error('tempDir is not set')
+            throw new Error('tempDir is unset')
           }
 
           const caseInputPath = join(s.tempDir, 'case-input')
@@ -91,9 +88,9 @@ export class SimpleJudgePipelineProvider {
 
             try {
               const task = this.execService.createJailAndMeterFasadeTask({
-                command: s.targetPath!,
-                memory_MB: s.meterOption.memoryLimit,
-                timeout_ms: s.meterOption.timeLimit,
+                command: `${s.tempDir}/target`,
+                memory_MB: s.user.limit.runtime.memory,
+                timeout_ms: s.user.limit.runtime.memory,
                 stdio: [caseInputFD.fd, userOutputFD.fd, 'ignore', 'ignore'],
                 cwd: s.tempDir,
                 bindMount: [{ source: s.tempDir, mode: 'rw' }]
@@ -121,8 +118,8 @@ export class SimpleJudgePipelineProvider {
 
                 // throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
                 testMeterOrThrow(measure, {
-                  cpuTime: s.meterOption.timeLimit!,
-                  memory: s.meterOption.memoryLimit!
+                  cpuTime: s.user.limit.runtime.cpuTime!,
+                  memory: s.user.limit.runtime.memory! * 1024 * 1024 * 8
                 })
 
                 throw new PipelineRuntimeError(
@@ -133,7 +130,6 @@ export class SimpleJudgePipelineProvider {
 
               s.user_exit_code = measure.returnCode
               s.user_measure = measure
-
             } catch (error) {
               throw error
             } finally {
