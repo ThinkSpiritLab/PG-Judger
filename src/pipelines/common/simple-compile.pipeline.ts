@@ -4,7 +4,7 @@
  * Created Date: Sa Jul 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jul 20 2024                                              *
+ * Last Modified: Sun Jul 21 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -53,7 +53,6 @@ export class SimpleCompilePipelineProvider {
   simpleCompilePipelineFactory(option: SimpleCompileOption) {
     return Pipeline.create<SimpleCompileStore>(({ pipe, ctx: { store } }) => {
       return pipe(() => {
-        console.log('init', store)
         return store.tempDir
       })
         .pipe(
@@ -90,14 +89,11 @@ export class SimpleCompilePipelineProvider {
               task.measure!
             ])
 
-            console.log(`#exit_code: ${exit_code}`)
-            console.log(`#compile measure: ${JSON.stringify(measure)}`)
-
             if (measure.returnCode !== 0) {
               // throw new JudgeCompileError('compile failed')
               testMeterOrThrow(measure, {
-                cpuTime: store.source.limit.compiler.cpuTime * 1024,
-                memory: store.source.limit.compiler.memory * 1024 * 1024 * 8
+                cpuTime: store.source.limit.compiler.cpuTime,
+                memory: store.source.limit.compiler.memory
               })
             }
 

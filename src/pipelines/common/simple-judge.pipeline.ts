@@ -26,7 +26,7 @@ import { JudgeException } from '@/modules/judge/judge.exceptions'
  * Created Date: Sa Jul 2024                                                   *
  * Author: Yuzhe Shi                                                           *
  * -----                                                                       *
- * Last Modified: Sat Jul 20 2024                                              *
+ * Last Modified: Sun Jul 21 2024                                              *
  * Modified By: Yuzhe Shi                                                      *
  * -----                                                                       *
  * Copyright (c) 2024 Nanjing University of Information Science & Technology   *
@@ -60,7 +60,6 @@ export class SimpleJudgePipelineProvider {
     return Pipeline.create<SimpleJudgeStore>(({ pipe, ctx: { store: s } }) => {
       return pipe(
         async () => {
-          console.log('init2', s)
           if (!s.tempDir) {
             throw new Error('tempDir is unset')
           }
@@ -114,12 +113,9 @@ export class SimpleJudgePipelineProvider {
               }
 
               if (measure.returnCode !== 0) {
-                // console.warn('user program failed')
-
-                // throw new LimitViolationError(`user program failed, exit code: ${measure.returnCode}`, measure)
                 testMeterOrThrow(measure, {
                   cpuTime: s.user.limit.runtime.cpuTime!,
-                  memory: s.user.limit.runtime.memory! * 1024 * 1024 * 8
+                  memory: s.user.limit.runtime.memory!
                 })
 
                 throw new PipelineRuntimeError(
