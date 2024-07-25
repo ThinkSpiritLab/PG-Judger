@@ -91,10 +91,10 @@ export class JudgeService {
     private readonly compileService: CompileService,
     private readonly pipelineService: PipelineService
   ) {
-    setTimeout(() => {
-      this.judge(toNormalJudgeRequest(AC, 'cpp')) 
-      // this.judge(toNormalJudgeRequest(AC, 'cpp'))
-    }, 600)
+    // setTimeout(() => {
+    //   this.judge(toNormalJudgeRequest(AC, 'cpp')) 
+    //   // this.judge(toNormalJudgeRequest(AC, 'cpp'))
+    // }, 600)
   }
 
   async judge(req: JudgeRequest) {
