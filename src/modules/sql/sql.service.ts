@@ -53,7 +53,6 @@ Employee 表:
 @Injectable()
 export class SqlService {
   constructor() {
-    console.log('sql service created')
     const dbDef = `
     CREATE TABLE Employee (
       id int,
@@ -63,6 +62,7 @@ export class SqlService {
     );
     `
 
+    //TODO 考虑测试用例直接写values后面的部分，不用写整个sql
     const testCases = [
       {
         dbInit: `
@@ -108,7 +108,9 @@ export class SqlService {
     referenceSql: SqlStmt,
     userSql: SqlStmt
   ) {
-    const db = new Database(':memory:')
+    const db = new Database(':memory:') 
+    //TODO 这个数据库是可以池化，减少创建的开销，每次运行直接删光数据表即可
+    //TODO benchmark
     db.pragma('journal_mode = WAL')
     console.log('db created')
     db.exec(dbDef)
@@ -129,6 +131,7 @@ export class SqlService {
       console.log(referenceResult)
 
       // compare the results
+      //TODO 改进比较的方式，不要直接转成字符串比较
       if (JSON.stringify(userResult) !== JSON.stringify(referenceResult)) {
         console.log('WA')
       } else {
