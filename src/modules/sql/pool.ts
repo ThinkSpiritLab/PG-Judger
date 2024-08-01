@@ -33,29 +33,29 @@ export class MemorySqlite {
   )
 
   static {
-    this.pool.on("factoryCreateError", function(err) {
-      console.log('factoryCreateError',err);
-    });
-    
-    this.pool.on("factoryDestroyError", function(err) {
-      console.log('factoryDestroyError',err);
-    });
+    this.pool.on('factoryCreateError', function (err) {
+      console.log('factoryCreateError', err)
+    })
+
+    this.pool.on('factoryDestroyError', function (err) {
+      console.log('factoryDestroyError', err)
+    })
   }
 
   static async acquire(): Promise<DB> {
     const db = await this.pool.acquire()
 
     // delete all tables
-    // const tables = db
-    //   .prepare<
-    //     [],
-    //     { name: string }
-    //   >("SELECT name FROM sqlite_master WHERE type='table'")
-    //   .all()
+    const tables = db
+      .prepare<
+        [],
+        { name: string }
+      >("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
 
-    // for (const table of tables) {
-    //   db.prepare(`DELETE FROM ${table.name}`).run()
-    // }
+    for (const table of tables) {
+      db.prepare(`DELETE FROM ${table.name}`).run()
+    }
 
     return db
   }
@@ -64,9 +64,7 @@ export class MemorySqlite {
     await this.pool.release(db)
   }
 
-  static async withMemDb<T>(
-    callback: (db: DB) => Promise<T>
-  ): Promise<T> {
+  static async withMemDb<T>(callback: (db: DB) => Promise<T>): Promise<T> {
     const db = await this.acquire()
     try {
       return await callback(db)
