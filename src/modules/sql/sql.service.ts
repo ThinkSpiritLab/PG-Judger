@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import * as Database from 'better-sqlite3'
+import { MemorySqlite } from './pool'
 
 type SqlStmt = string
 
@@ -108,11 +109,9 @@ export class SqlService {
     referenceSql: SqlStmt,
     userSql: SqlStmt
   ) {
-    const db = new Database(':memory:') 
-    //TODO 这个数据库是可以池化，减少创建的开销，每次运行直接删光数据表即可
+    const db = await MemorySqlite.acquire()
     //TODO benchmark
     db.pragma('journal_mode = WAL')
-    console.log('db created')
     db.exec(dbDef)
 
     for (const testCase of testCases) {
